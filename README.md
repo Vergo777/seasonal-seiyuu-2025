@@ -8,7 +8,12 @@ Discover voice actors (seiyuu) in the current anime season and explore their rol
 - **Frontend**: Vite + Vanilla JS (built to `backend/src/main/resources/static/`)
 - **Data**: Jikan API v4 (MyAnimeList) → cached to local JSON file
 
----
+## 📋 Specifications (SpecKit)
+
+See [`.github/specs/`](.github/specs/) for detailed documentation:
+- [**Constitution**](.github/specs/constitution.md) - Project principles & tech choices
+- [**Features**](.github/specs/features.md) - User stories & API spec
+- [**Architecture**](.github/specs/architecture.md) - System design & data flow
 
 ## 🚀 Quick Start (Development)
 
