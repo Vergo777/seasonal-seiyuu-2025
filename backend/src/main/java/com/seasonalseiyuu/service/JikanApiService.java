@@ -47,10 +47,16 @@ public class JikanApiService {
 
         while (hasNextPage) {
             log.info("Fetching season anime page {}", page);
-            String response = restClient.get()
-                    .uri("/seasons/now?page={page}", page)
+            final int currentPage = page;
+            String response = fetchWithRetry(() -> restClient.get()
+                    .uri("/seasons/now?page={page}", currentPage)
                     .retrieve()
-                    .body(String.class);
+                    .body(String.class));
+
+            if (response == null) {
+                log.error("Failed to fetch page {} after retries", page);
+                break;
+            }
 
             try {
                 JsonNode root = objectMapper.readTree(response);
@@ -187,6 +193,34 @@ public class JikanApiService {
                 node.path("name").asText(),
                 node.path("images").path("jpg").path("image_url").asText(),
                 "");
+    }
+
+    /**
+     * Fetch with retry logic for rate limiting.
+     */
+    private String fetchWithRetry(java.util.function.Supplier<String> fetcher) {
+        int maxRetries = 5;
+        long backoffMs = 2000;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                rateLimit();
+                return fetcher.get();
+            } catch (org.springframework.web.client.HttpClientErrorException.TooManyRequests e) {
+                log.warn("Rate limited (attempt {}/{}), backing off {}ms", attempt, maxRetries, backoffMs);
+                try {
+                    Thread.sleep(backoffMs);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    return null;
+                }
+                backoffMs *= 2; // Exponential backoff
+            } catch (Exception e) {
+                log.error("API request failed: {}", e.getMessage());
+                return null;
+            }
+        }
+        return null;
     }
 
     private void rateLimit() {
