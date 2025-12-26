@@ -8,6 +8,17 @@ Discover voice actors (seiyuu) in the current anime season and explore their rol
 - **Frontend**: Vite + Vanilla JS (built to `backend/src/main/resources/static/`)
 - **Data**: Jikan API v4 (MyAnimeList) → cached to local JSON file
 
+- **Data**: Jikan API v4 (MyAnimeList) → cached to local JSON file
+
+## ✨ Features
+
+- **Voice Actor Grid**: See all voice actors in the current season, sorted by popularity.
+- **Detailed Profiles**: Explore seasonal roles and complete career history for any seiyuu.
+- **Compare Tool**: ⚔️ Compare two voice actors to find all anime they've worked on together.
+- **Smart Search**: Searchable autocomplete for quick discovery.
+- **MAL Integrated**: Direct links to MyAnimeList for voice actors, anime, and characters.
+- **AI-Powered**: Built with the help of Antigravity AI.
+
 ## 📋 Specifications (SpecKit)
 
 See [`.github/specs/`](.github/specs/) for detailed documentation:
@@ -176,8 +187,9 @@ All endpoints are prefixed with `/seiyuu`:
 
 | Endpoint | Auth | Description |
 |----------|------|-------------|
-| `GET /seiyuu/api/voice-actors` | No | List all VAs (sorted by show count) |
-| `GET /seiyuu/api/voice-actors/{id}` | No | VA details with roles |
-| `GET /seiyuu/api/season-info` | No | Season metadata |
-| `POST /seiyuu/api/admin/refresh` | API Key | Trigger data refresh |
-| `GET /seiyuu/api/admin/refresh/status` | API Key | Refresh progress |
+| `GET /seiyuu/api/voice-actors` | No | List all VAs (lightweight summaries) |
+| `GET /seiyuu/api/voice-actors/{id}` | No | VA details with full career roles |
+| `GET /seiyuu/api/season-info` | No | Season metadata & cache status |
+| `GET /seiyuu/api/compare/{id1}/{id2}` | No | Shared anime and career comparison |
+| `POST /seiyuu/api/admin/refresh` | API Key | Trigger data refresh (resumable) |
+| `GET /seiyuu/api/admin/refresh/status` | API Key | Current refresh progress |

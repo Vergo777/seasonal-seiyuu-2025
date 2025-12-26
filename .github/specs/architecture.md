@@ -40,18 +40,23 @@
 
 ### JikanApiService
 - HTTP client for Jikan API
-- Rate limiting (1 second between requests)
-- Retry with exponential backoff for 429 errors
+- Rate limiting (fixed 1s delay and retry with backoff for 429s)
+- **Robust Fetching**: `fetchWithRetry` ensures data completeness for characters and roles
 
 ### CacheService
 - JSON file persistence using Jackson
-- Load/save season cache
+- In-memory caching of `SeasonCache` to avoid repeated disk reads
 - Load/save refresh progress for resumability
 
 ### SeasonDataService
 - Orchestrates data fetching workflow
 - Aggregates VAs across all anime
+- **Data Validation**: Checks anime counts against API totals and tracks zero-character results
 - Manages resumable refresh state
+
+### Performance Optimization
+- **Lightweight Summaries**: The main list endpoint `/api/voice-actors` returns `VoiceActorSummary` objects (ID, name, image, show counts) rather than the full `VoiceActor` DTO which contains potentially thousands of career roles.
+- **Frontend Lazy Loading**: Role grids and large lists are rendered as needed.
 
 ### VoiceActorController
 - Public REST endpoints

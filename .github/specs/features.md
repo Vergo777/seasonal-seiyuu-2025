@@ -15,6 +15,7 @@ A web application that aggregates voice actor information for the current anime 
 - Sorted by number of shows (most active first)
 - Search filter by VA name
 - Responsive grid layout
+- **Sticky Search**: Search bar stays fixed at the top while scrolling
 
 ### Voice Actor Detail Page
 **As a** visitor  
@@ -44,14 +45,26 @@ A web application that aggregates voice actor information for the current anime 
 **So that** I can see their shared anime and compare their careers
 
 **Acceptance Criteria:**
-- Select two VAs from dropdowns or search
-- Side-by-side stats comparison (total roles, seasonal shows, career start)
-- List of shared anime with both characters they played
-- Shareable URL (e.g., `/compare/123/456`)
+- **Searchable Autocomplete**: Select two VAs using a hybrid searchable input with image previews
+- Side-by-side stats comparison (total roles, seasonal shows)
+- Aggregated list of shared anime with all characters they played in each
+- **External Links**: Direct MyAnimeList (MAL) links for voice actors, anime titles, and characters
+- Shareable URL (e.g., `#/compare/123/456`)
 - Works with any VA in the current season's dataset
 
-**UI Wireframe:**
 ```
+
+### About Page
+**As a** visitor  
+**I want to** learn about the project and its creation  
+**So that** I understand the tech stack and the AI-driven development process
+
+**Acceptance Criteria:**
+- Accessible via "About" link in header
+- Describes project purpose and features
+- Mentions Use of **Antigravity AI**
+- Lists tech stack (Java 25, Spring Boot, etc.)
+- Link to GitHub repository
 ┌─────────────────────────────────────────────────────┐
 │  [VA 1 Dropdown ▼]    ⚔️    [VA 2 Dropdown ▼]      │
 ├───────────────────────┬─────────────────────────────┤
