@@ -71,17 +71,19 @@ erDiagram
 
 ## API Specification
 
+All endpoints are served under the `/seiyuu` context path.
+
 ### Public Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/voice-actors` | List all VAs (sorted by show count) |
-| GET | `/api/voice-actors/{id}` | Get VA with seasonal + all-time roles |
-| GET | `/api/season-info` | Get current season metadata |
+| GET | `/seiyuu/api/voice-actors` | List all VAs (sorted by show count) |
+| GET | `/seiyuu/api/voice-actors/{id}` | Get VA with seasonal + all-time roles |
+| GET | `/seiyuu/api/season-info` | Get current season metadata |
 
 ### Admin Endpoints (X-API-Key required)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| POST | `/api/admin/refresh` | Trigger data refresh |
-| GET | `/api/admin/refresh/status` | Get refresh progress |
+| POST | `/seiyuu/api/admin/refresh` | Trigger data refresh |
+| GET | `/seiyuu/api/admin/refresh/status` | Get refresh progress |

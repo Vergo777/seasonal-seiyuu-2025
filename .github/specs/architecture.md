@@ -71,7 +71,7 @@ sequenceDiagram
     participant Cache
     participant Jikan
 
-    Admin->>Backend: POST /api/admin/refresh
+    Admin->>Backend: POST /seiyuu/api/admin/refresh
     Backend->>Cache: Load progress (if exists)
     
     loop For each anime

@@ -52,7 +52,7 @@ cd backend
 ### 2. Copy to VPS
 
 ```bash
-scp backend/build/libs/seasonal-seiyuu-1.0.0.jar user@your-vps:/opt/seasonal-seiyuu/
+scp backend/build/libs/seasonal-seiyuu-1.0.0.jar user@vergo.moe:/opt/seasonal-seiyuu/
 ```
 
 ### 3. nginx Configuration
