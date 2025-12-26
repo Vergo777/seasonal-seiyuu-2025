@@ -38,6 +38,40 @@ A web application that aggregates voice actor information for the current anime 
 - Resumable if interrupted
 - Status endpoint to monitor progress
 
+### Compare Voice Actors
+**As a** visitor  
+**I want to** compare two voice actors side-by-side  
+**So that** I can see their shared anime and compare their careers
+
+**Acceptance Criteria:**
+- Select two VAs from dropdowns or search
+- Side-by-side stats comparison (total roles, seasonal shows, career start)
+- List of shared anime with both characters they played
+- Shareable URL (e.g., `/compare/123/456`)
+- Works with any VA in the current season's dataset
+
+**UI Wireframe:**
+```
+┌─────────────────────────────────────────────────────┐
+│  [VA 1 Dropdown ▼]    ⚔️    [VA 2 Dropdown ▼]      │
+├───────────────────────┬─────────────────────────────┤
+│  [Image]              │                    [Image]  │
+│  Sugita Tomokazu      │          Nakamura Yuuichi   │
+│  523 career roles     │            487 career roles │
+│  8 shows this season  │        6 shows this season  │
+├───────────────────────┴─────────────────────────────┤
+│             🤝 12 Shared Anime                      │
+│  ┌─────────────────────────────────────────────┐   │
+│  │ Gintama                                      │   │
+│  │ Gintoki Sakata ←→ Shinsuke Takasugi         │   │
+│  └─────────────────────────────────────────────┘   │
+│  ┌─────────────────────────────────────────────┐   │
+│  │ JoJo's Bizarre Adventure                    │   │
+│  │ Joseph Joestar ←→ Jotaro Kujo               │   │
+│  └─────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────┘
+```
+
 ## Data Model
 
 ```mermaid
@@ -80,6 +114,7 @@ All endpoints are served under the `/seiyuu` context path.
 | GET | `/seiyuu/api/voice-actors` | List all VAs (sorted by show count) |
 | GET | `/seiyuu/api/voice-actors/{id}` | Get VA with seasonal + all-time roles |
 | GET | `/seiyuu/api/season-info` | Get current season metadata |
+| GET | `/seiyuu/api/compare/{id1}/{id2}` | Compare two VAs (stats + shared anime) |
 
 ### Admin Endpoints (X-API-Key required)
 

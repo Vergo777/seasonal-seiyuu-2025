@@ -21,9 +21,15 @@ async function fetchSeasonInfo() {
   return res.json();
 }
 
+async function fetchCompare(id1, id2) {
+  const res = await fetch(`${API_BASE}/compare/${id1}/${id2}`);
+  if (!res.ok) throw new Error('Compare failed');
+  return res.json();
+}
+
 // ===== State =====
 let allVoiceActors = [];
-let currentView = 'list'; // 'list' or 'detail'
+let currentView = 'list'; // 'list', 'detail', or 'compare'
 let currentVaId = null;
 
 // ===== Router =====
@@ -32,6 +38,17 @@ function handleRoute() {
   if (hash.startsWith('#/voice-actor/')) {
     const id = parseInt(hash.split('/')[2]);
     showDetailPage(id);
+  } else if (hash.startsWith('#/compare/')) {
+    const parts = hash.split('/');
+    const id1 = parseInt(parts[2]);
+    const id2 = parseInt(parts[3]);
+    if (id1 && id2) {
+      showComparePage(id1, id2);
+    } else {
+      showCompareSelectPage();
+    }
+  } else if (hash === '#/compare' || hash === '#/compare/') {
+    showCompareSelectPage();
   } else {
     showListPage();
   }
@@ -47,6 +64,7 @@ function renderSeasonInfo(info) {
     el.innerHTML = `
       <span class="season-badge">${seasonName} ${info.year}</span>
       <span style="margin-left: 0.5rem">${info.voiceActorCount} Voice Actors</span>
+      <a href="#/compare" class="compare-nav-link">⚔️ Compare</a>
     `;
   }
 }
@@ -98,8 +116,6 @@ function renderVaCard(va) {
     </a>
   `;
 }
-
-// Card click listeners no longer needed - using anchor links
 
 function renderDetailPage(va) {
   const main = document.getElementById('main-content');
@@ -174,6 +190,130 @@ function renderRolesGrid(roles) {
   `;
 }
 
+function renderCompareSelectPage() {
+  const main = document.getElementById('main-content');
+
+  main.innerHTML = `
+    <button class="back-btn" onclick="window.location.hash='/'">← Back to List</button>
+    
+    <div class="compare-page">
+      <h1 class="compare-title">⚔️ Compare Voice Actors</h1>
+      <p class="compare-subtitle">Select two voice actors to compare their careers and find shared anime</p>
+      
+      <div class="compare-selectors">
+        <div class="compare-selector">
+          <label>Voice Actor 1</label>
+          <select id="va-select-1" class="va-select">
+            <option value="">Select a voice actor...</option>
+            ${allVoiceActors.map(va => `<option value="${va.malId}">${va.name}</option>`).join('')}
+          </select>
+        </div>
+        
+        <div class="compare-vs">VS</div>
+        
+        <div class="compare-selector">
+          <label>Voice Actor 2</label>
+          <select id="va-select-2" class="va-select">
+            <option value="">Select a voice actor...</option>
+            ${allVoiceActors.map(va => `<option value="${va.malId}">${va.name}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      
+      <button class="compare-btn" id="compare-btn" disabled>Compare</button>
+    </div>
+  `;
+
+  const select1 = document.getElementById('va-select-1');
+  const select2 = document.getElementById('va-select-2');
+  const compareBtn = document.getElementById('compare-btn');
+
+  function updateCompareButton() {
+    compareBtn.disabled = !select1.value || !select2.value || select1.value === select2.value;
+  }
+
+  select1.addEventListener('change', updateCompareButton);
+  select2.addEventListener('change', updateCompareButton);
+
+  compareBtn.addEventListener('click', () => {
+    if (select1.value && select2.value) {
+      window.location.hash = `/compare/${select1.value}/${select2.value}`;
+    }
+  });
+}
+
+function renderCompareResults(data) {
+  const main = document.getElementById('main-content');
+  const { va1, va2, sharedAnime } = data;
+
+  main.innerHTML = `
+    <button class="back-btn" onclick="window.location.hash='/compare'">← Change Selection</button>
+    
+    <div class="compare-results">
+      <div class="compare-header">
+        <div class="compare-va compare-va-1">
+          <img class="compare-va-image" src="${va1.imageUrl || 'https://via.placeholder.com/150x200'}" alt="${va1.name}">
+          <h2 class="compare-va-name">${va1.name}</h2>
+          <div class="compare-va-stats">
+            <div class="compare-stat">
+              <span class="compare-stat-value">${va1.totalCareerRoles}</span>
+              <span class="compare-stat-label">Career Roles</span>
+            </div>
+            <div class="compare-stat">
+              <span class="compare-stat-value">${va1.totalSeasonalShows}</span>
+              <span class="compare-stat-label">This Season</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="compare-vs-banner">
+          <span class="vs-text">VS</span>
+          <div class="shared-count">${sharedAnime.length} Shared Anime</div>
+        </div>
+        
+        <div class="compare-va compare-va-2">
+          <img class="compare-va-image" src="${va2.imageUrl || 'https://via.placeholder.com/150x200'}" alt="${va2.name}">
+          <h2 class="compare-va-name">${va2.name}</h2>
+          <div class="compare-va-stats">
+            <div class="compare-stat">
+              <span class="compare-stat-value">${va2.totalCareerRoles}</span>
+              <span class="compare-stat-label">Career Roles</span>
+            </div>
+            <div class="compare-stat">
+              <span class="compare-stat-value">${va2.totalSeasonalShows}</span>
+              <span class="compare-stat-label">This Season</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      ${sharedAnime.length > 0 ? `
+        <h3 class="shared-title">🤝 Shared Anime</h3>
+        <div class="shared-anime-grid">
+          ${sharedAnime.map(anime => `
+            <div class="shared-anime-card">
+              <img class="shared-anime-image" src="${anime.imageUrl || ''}" alt="${anime.title}"
+                   onerror="this.src='https://via.placeholder.com/80x110?text=?'">
+              <div class="shared-anime-info">
+                <div class="shared-anime-title">${anime.title}</div>
+                <div class="shared-characters">
+                  <span class="char-1">${anime.characters1.join(', ')}</span>
+                  <span class="char-arrow">↔</span>
+                  <span class="char-2">${anime.characters2.join(', ')}</span>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : `
+        <div class="no-shared">
+          <p>These voice actors haven't appeared in any anime together... yet!</p>
+        </div>
+      `}
+    </div>
+  `;
+}
+
 // ===== Page Controllers =====
 async function showListPage() {
   currentView = 'list';
@@ -225,5 +365,51 @@ async function showDetailPage(id) {
   }
 }
 
+async function showCompareSelectPage() {
+  currentView = 'compare';
+
+  // Ensure we have VA list loaded
+  if (allVoiceActors.length === 0) {
+    document.getElementById('main-content').innerHTML = `
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>Loading voice actors...</p>
+      </div>
+    `;
+    try {
+      allVoiceActors = await fetchVoiceActors();
+    } catch (err) {
+      console.error('Error loading voice actors:', err);
+    }
+  }
+
+  renderCompareSelectPage();
+}
+
+async function showComparePage(id1, id2) {
+  currentView = 'compare';
+
+  document.getElementById('main-content').innerHTML = `
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Comparing voice actors...</p>
+    </div>
+  `;
+
+  try {
+    const data = await fetchCompare(id1, id2);
+    renderCompareResults(data);
+  } catch (err) {
+    console.error('Error comparing:', err);
+    document.getElementById('main-content').innerHTML = `
+      <div class="empty-state">
+        <h2>Compare Failed</h2>
+        <p><a href="#/compare">Try again</a></p>
+      </div>
+    `;
+  }
+}
+
 // ===== Initialize =====
 handleRoute();
+
