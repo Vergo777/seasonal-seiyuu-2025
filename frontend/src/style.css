@@ -481,8 +481,9 @@ a:hover {
 }
 
 .role-anime-image {
-  width: 70px;
-  height: 100px;
+  width: 80px;
+  height: auto;
+  min-height: 100%;
   object-fit: cover;
   flex-shrink: 0;
   filter: contrast(1.05);
@@ -493,7 +494,7 @@ a:hover {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-between;
 }
 
 .role-anime-title {
@@ -503,6 +504,11 @@ a:hover {
   color: var(--text-hero);
   text-transform: uppercase;
   margin-bottom: 0.5rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .role-character {
