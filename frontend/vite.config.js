@@ -1,9 +1,10 @@
 import { defineConfig } from 'vite'
 
 export default defineConfig({
+    base: '/seiyuu/',
     server: {
         proxy: {
-            '/api': {
+            '/seiyuu/api': {
                 target: 'http://localhost:8080',
                 changeOrigin: true
             }

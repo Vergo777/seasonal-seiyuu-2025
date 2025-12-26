@@ -1,7 +1,7 @@
 import './style.css';
 
 // ===== API Client =====
-const API_BASE = '/api';
+const API_BASE = '/seiyuu/api';
 
 async function fetchVoiceActors() {
   const res = await fetch(`${API_BASE}/voice-actors`);

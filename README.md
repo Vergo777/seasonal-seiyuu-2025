@@ -18,24 +18,32 @@ See [`.github/specs/`](.github/specs/) for detailed documentation:
 ## 🚀 Quick Start (Development)
 
 ```bash
+# Build frontend
+cd frontend
+npm install
+npm run build
+
 # Start backend (serves frontend)
-cd backend
+cd ../backend
 ./gradlew bootRun
 
-# Open http://localhost:8080
+# Open http://localhost:8080/seiyuu/
 ```
+
+> **Note**: The app runs under the `/seiyuu` context path locally and in production.
 
 ---
 
-## 🖥️ VPS Deployment
+## 🖥️ VPS Deployment (vergo.moe/seiyuu)
 
 ### Prerequisites
 - Java 25+ installed
-- Port 8080 available (or configure `server.port`)
+- nginx with reverse proxy to port 8080
 
 ### 1. Build the JAR
 
 ```bash
+cd frontend && npm run build && cd ..
 cd backend
 ./gradlew bootJar
 # Output: build/libs/seasonal-seiyuu-1.0.0.jar
@@ -44,10 +52,31 @@ cd backend
 ### 2. Copy to VPS
 
 ```bash
-scp build/libs/seasonal-seiyuu-1.0.0.jar user@your-vps:/opt/seasonal-seiyuu/
+scp backend/build/libs/seasonal-seiyuu-1.0.0.jar user@your-vps:/opt/seasonal-seiyuu/
 ```
 
-### 3. Create systemd Service
+### 3. nginx Configuration
+
+Add to your nginx server block:
+
+```nginx
+# Route /seiyuu to Spring Boot App
+location /seiyuu/ {
+    proxy_pass http://localhost:8080/seiyuu/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-Prefix /seiyuu;
+}
+
+# Redirect /seiyuu (no slash) to /seiyuu/
+location = /seiyuu {
+    return 301 /seiyuu/;
+}
+```
+
+### 4. Create systemd Service
 
 Create `/etc/systemd/system/seasonal-seiyuu.service`:
 ```ini
@@ -68,7 +97,7 @@ RestartSec=10
 WantedBy=multi-user.target
 ```
 
-### 4. Start the Service
+### 5. Start the Service
 
 ```bash
 sudo systemctl daemon-reload
@@ -87,11 +116,14 @@ sudo journalctl -u seasonal-seiyuu -f
 Run this when a new anime season starts (typically Jan/Apr/Jul/Oct):
 
 ```bash
-# Trigger refresh
-curl -X POST -H "X-API-Key: your-secret-key-here" http://localhost:8080/api/admin/refresh
+# Trigger refresh (on VPS)
+curl -X POST -H "X-API-Key: your-secret-key-here" https://vergo.moe/seiyuu/api/admin/refresh
 
 # Check progress
-curl -H "X-API-Key: your-secret-key-here" http://localhost:8080/api/admin/refresh/status
+curl -H "X-API-Key: your-secret-key-here" https://vergo.moe/seiyuu/api/admin/refresh/status
+
+# Or locally:
+curl -X POST -H "X-API-Key: changeme" http://localhost:8080/seiyuu/api/admin/refresh
 ```
 
 **Note**: Refresh takes ~10-15 minutes due to API rate limiting.
@@ -104,7 +136,7 @@ The refresh is **resumable** - if it fails mid-way, just trigger it again and it
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ADMIN_API_KEY` | `changeme` | Required for `/api/admin/*` endpoints |
+| `ADMIN_API_KEY` | `changeme` | Required for `/seiyuu/api/admin/*` endpoints |
 | `SERVER_PORT` | `8080` | HTTP port |
 
 ---
@@ -133,17 +165,19 @@ sudo systemctl restart seasonal-seiyuu
 sudo systemctl stop seasonal-seiyuu
 
 # Check if running
-curl http://localhost:8080/api/season-info
+curl https://vergo.moe/seiyuu/api/season-info
 ```
 
 ---
 
 ## API Endpoints
 
+All endpoints are prefixed with `/seiyuu`:
+
 | Endpoint | Auth | Description |
 |----------|------|-------------|
-| `GET /api/voice-actors` | No | List all VAs (sorted by show count) |
-| `GET /api/voice-actors/{id}` | No | VA details with roles |
-| `GET /api/season-info` | No | Season metadata |
-| `POST /api/admin/refresh` | API Key | Trigger data refresh |
-| `GET /api/admin/refresh/status` | API Key | Refresh progress |
+| `GET /seiyuu/api/voice-actors` | No | List all VAs (sorted by show count) |
+| `GET /seiyuu/api/voice-actors/{id}` | No | VA details with roles |
+| `GET /seiyuu/api/season-info` | No | Season metadata |
+| `POST /seiyuu/api/admin/refresh` | API Key | Trigger data refresh |
+| `GET /seiyuu/api/admin/refresh/status` | API Key | Refresh progress |
