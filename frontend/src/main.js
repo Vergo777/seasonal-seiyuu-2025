@@ -49,6 +49,8 @@ function handleRoute() {
     }
   } else if (hash === '#/compare' || hash === '#/compare/') {
     showCompareSelectPage();
+  } else if (hash === '#/about') {
+    showAboutPage();
   } else {
     showListPage();
   }
@@ -513,6 +515,68 @@ async function showComparePage(id1, id2) {
       </div>
     `;
   }
+}
+
+function showAboutPage() {
+  currentView = 'about';
+  const main = document.getElementById('main-content');
+
+  main.innerHTML = `
+    <button class="back-btn" onclick="window.location.hash='/'">← Back to List</button>
+    
+    <div class="about-page">
+      <h1 class="about-title">About Seasonal Seiyuu</h1>
+      
+      <section class="about-section">
+        <h2>🎙️ What is this?</h2>
+        <p>
+          Seasonal Seiyuu is a web application that helps anime fans discover and explore 
+          voice actors (seiyuu) appearing in the current anime season. Browse all voice actors, 
+          see their roles, explore their full career history, and compare two VAs to find 
+          anime they've worked on together.
+        </p>
+      </section>
+      
+      <section class="about-section">
+        <h2>🤖 Built with AI</h2>
+        <p>
+          This entire project was created using <strong>Antigravity</strong>, Google DeepMind's 
+          advanced AI coding assistant. From the initial concept to the final implementation—including 
+          the Spring Boot backend, Vite frontend, API integration, caching system, and all the 
+          UI/UX design—every line of code was written through AI-human collaboration.
+        </p>
+      </section>
+      
+      <section class="about-section">
+        <h2>🛠️ Tech Stack</h2>
+        <ul class="tech-list">
+          <li><strong>Backend:</strong> Java 25, Spring Boot 3.5</li>
+          <li><strong>Frontend:</strong> Vanilla JavaScript, Vite</li>
+          <li><strong>Styling:</strong> Custom CSS with Midnight Sakura theme</li>
+          <li><strong>Data Source:</strong> Jikan API (unofficial MyAnimeList API)</li>
+        </ul>
+      </section>
+      
+      <section class="about-section">
+        <h2>✨ Features</h2>
+        <ul class="tech-list">
+          <li>Browse all voice actors in the current anime season</li>
+          <li>Search and filter by name</li>
+          <li>View detailed VA profiles with seasonal and all-time roles</li>
+          <li>Compare two VAs to discover shared anime</li>
+          <li>Direct links to MyAnimeList for VAs, anime, and characters</li>
+        </ul>
+      </section>
+      
+      <section class="about-section about-footer">
+        <p>
+          <a href="https://github.com/Vergo777/seasonal-seiyuu-2025" target="_blank" rel="noopener" class="about-github-link">
+            View on GitHub →
+          </a>
+        </p>
+      </section>
+    </div>
+  `;
 }
 
 // ===== Initialize =====
