@@ -11,26 +11,6 @@ public record CompareResult(
         List<SharedAnime> sharedAnime) {
 
     /**
-     * Summary of a VA for comparison (without full role lists).
-     */
-    public record VoiceActorSummary(
-            int malId,
-            String name,
-            String imageUrl,
-            int totalSeasonalShows,
-            int totalCareerRoles) {
-
-        public static VoiceActorSummary from(VoiceActor va) {
-            return new VoiceActorSummary(
-                    va.malId(),
-                    va.name(),
-                    va.imageUrl(),
-                    va.totalSeasonalShows(),
-                    va.allTimeRoles() != null ? va.allTimeRoles().size() : 0);
-        }
-    }
-
-    /**
      * An anime that both VAs have appeared in.
      */
     public record SharedAnime(

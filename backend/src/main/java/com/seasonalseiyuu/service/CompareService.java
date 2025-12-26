@@ -3,7 +3,7 @@ package com.seasonalseiyuu.service;
 import com.seasonalseiyuu.model.CompareResult;
 import com.seasonalseiyuu.model.CompareResult.CharacterRef;
 import com.seasonalseiyuu.model.CompareResult.SharedAnime;
-import com.seasonalseiyuu.model.CompareResult.VoiceActorSummary;
+import com.seasonalseiyuu.model.VoiceActorSummary;
 import com.seasonalseiyuu.model.Role;
 import com.seasonalseiyuu.model.VoiceActor;
 import org.springframework.stereotype.Service;

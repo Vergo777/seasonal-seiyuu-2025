@@ -28,12 +28,13 @@ public class CacheService {
 
     private final ObjectMapper objectMapper;
     private final Path cacheDirectory;
+    private SeasonCache cachedData = null; // In-memory cache
 
     public CacheService(@Value("${cache.directory}") String cacheDir) {
         this.cacheDirectory = Path.of(cacheDir);
         this.objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
-                .enable(SerializationFeature.INDENT_OUTPUT)
+                .disable(SerializationFeature.INDENT_OUTPUT) // Disable indent for smaller file size
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
@@ -48,9 +49,13 @@ public class CacheService {
     }
 
     /**
-     * Loads the season cache from disk.
+     * Loads the season cache from disk or memory.
      */
     public Optional<SeasonCache> loadCache() {
+        if (cachedData != null) {
+            return Optional.of(cachedData);
+        }
+
         Path cachePath = cacheDirectory.resolve(CACHE_FILE);
         if (!Files.exists(cachePath)) {
             log.info("No cache file found");
@@ -58,10 +63,10 @@ public class CacheService {
         }
 
         try {
-            SeasonCache cache = objectMapper.readValue(cachePath.toFile(), SeasonCache.class);
-            log.info("Loaded cache: {} {} with {} voice actors",
-                    cache.season(), cache.year(), cache.voiceActors().size());
-            return Optional.of(cache);
+            cachedData = objectMapper.readValue(cachePath.toFile(), SeasonCache.class);
+            log.info("Loaded cache from disk: {} {} with {} voice actors",
+                    cachedData.season(), cachedData.year(), cachedData.voiceActors().size());
+            return Optional.of(cachedData);
         } catch (IOException e) {
             log.error("Failed to load cache", e);
             return Optional.empty();
@@ -69,13 +74,14 @@ public class CacheService {
     }
 
     /**
-     * Saves the season cache to disk.
+     * Saves the season cache to disk and updates memory.
      */
     public void saveCache(SeasonCache cache) {
         Path cachePath = cacheDirectory.resolve(CACHE_FILE);
         try {
             objectMapper.writeValue(cachePath.toFile(), cache);
-            log.info("Saved cache: {} {} with {} voice actors",
+            this.cachedData = cache;
+            log.info("Saved cache to disk and updated memory: {} {} with {} voice actors",
                     cache.season(), cache.year(), cache.voiceActors().size());
         } catch (IOException e) {
             log.error("Failed to save cache", e);

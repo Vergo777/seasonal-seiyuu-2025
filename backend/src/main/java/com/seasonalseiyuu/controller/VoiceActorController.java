@@ -2,6 +2,7 @@ package com.seasonalseiyuu.controller;
 
 import com.seasonalseiyuu.model.CompareResult;
 import com.seasonalseiyuu.model.VoiceActor;
+import com.seasonalseiyuu.model.VoiceActorSummary;
 import com.seasonalseiyuu.service.CompareService;
 import com.seasonalseiyuu.service.SeasonDataService;
 import org.springframework.http.ResponseEntity;
@@ -27,17 +28,20 @@ public class VoiceActorController {
 
         /**
          * Get all voice actors in the current season, sorted by show count descending.
+         * Returns lightweight summary objects for performance.
          */
         @GetMapping("/voice-actors")
-        public ResponseEntity<List<VoiceActor>> getAllVoiceActors() {
+        public ResponseEntity<List<VoiceActorSummary>> getAllVoiceActors() {
                 return seasonDataService.getSeasonData()
                                 .map(cache -> {
-                                        List<VoiceActor> sorted = cache.voiceActors().values().stream()
-                                                        .sorted(Comparator.comparingInt(VoiceActor::totalSeasonalShows)
+                                        List<VoiceActorSummary> summaries = cache.voiceActors().values().stream()
+                                                        .map(VoiceActorSummary::from)
+                                                        .sorted(Comparator.comparingInt(
+                                                                        VoiceActorSummary::totalSeasonalShows)
                                                                         .reversed()
-                                                                        .thenComparing(VoiceActor::name))
+                                                                        .thenComparing(VoiceActorSummary::name))
                                                         .toList();
-                                        return ResponseEntity.ok(sorted);
+                                        return ResponseEntity.ok(summaries);
                                 })
                                 .orElse(ResponseEntity.ok(List.of()));
         }
