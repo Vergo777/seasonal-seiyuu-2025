@@ -89,10 +89,15 @@ public class JikanApiService {
         List<CharacterVoiceActor> results = new ArrayList<>();
 
         log.debug("Fetching characters for anime {}", animeId);
-        String response = restClient.get()
+        String response = fetchWithRetry(() -> restClient.get()
                 .uri("/anime/{id}/characters", animeId)
                 .retrieve()
-                .body(String.class);
+                .body(String.class));
+
+        if (response == null) {
+            log.error("Failed to fetch characters for anime {} after retries", animeId);
+            return results;
+        }
 
         try {
             JsonNode root = objectMapper.readTree(response);
@@ -115,10 +120,8 @@ public class JikanApiService {
                     }
                 }
             }
-
-            rateLimit();
         } catch (Exception e) {
-            log.error("Error fetching characters for anime {}", animeId, e);
+            log.error("Error parsing characters for anime {}", animeId, e);
         }
 
         return results;
@@ -131,10 +134,15 @@ public class JikanApiService {
         List<Role> roles = new ArrayList<>();
 
         log.debug("Fetching voice roles for person {}", personId);
-        String response = restClient.get()
+        String response = fetchWithRetry(() -> restClient.get()
                 .uri("/people/{id}/voices", personId)
                 .retrieve()
-                .body(String.class);
+                .body(String.class));
+
+        if (response == null) {
+            log.error("Failed to fetch voice roles for person {} after retries", personId);
+            return roles;
+        }
 
         try {
             JsonNode root = objectMapper.readTree(response);
@@ -147,10 +155,8 @@ public class JikanApiService {
                     roles.add(new Role(anime, character));
                 }
             }
-
-            rateLimit();
         } catch (Exception e) {
-            log.error("Error fetching voice roles for person {}", personId, e);
+            log.error("Error parsing voice roles for person {}", personId, e);
         }
 
         return roles;
