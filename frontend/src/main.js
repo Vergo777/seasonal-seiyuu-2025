@@ -81,36 +81,29 @@ function renderVaGrid(voiceActors) {
       va.name.toLowerCase().includes(query)
     );
     document.getElementById('va-grid').innerHTML = filtered.map(va => renderVaCard(va)).join('');
-    attachCardListeners();
   });
-
-  attachCardListeners();
 }
 
 function renderVaCard(va) {
   return `
-    <div class="va-card" data-va-id="${va.malId}">
-      <img class="va-card-image" src="${va.imageUrl || '/placeholder.png'}" alt="${va.name}" loading="lazy" 
-           onerror="this.src='https://via.placeholder.com/200x267?text=No+Image'">
-      <div class="va-card-content">
-        <div class="va-card-name">${va.name}</div>
-        <span class="va-card-shows">${va.totalSeasonalShows} show${va.totalSeasonalShows !== 1 ? 's' : ''}</span>
+    <a href="#/voice-actor/${va.malId}" target="_blank" class="va-card-link">
+      <div class="va-card" data-va-id="${va.malId}">
+        <img class="va-card-image" src="${va.imageUrl || '/placeholder.png'}" alt="${va.name}" loading="lazy" 
+             onerror="this.src='https://via.placeholder.com/200x267?text=No+Image'">
+        <div class="va-card-content">
+          <div class="va-card-name">${va.name}</div>
+          <span class="va-card-shows">${va.totalSeasonalShows} show${va.totalSeasonalShows !== 1 ? 's' : ''}</span>
+        </div>
       </div>
-    </div>
+    </a>
   `;
 }
 
-function attachCardListeners() {
-  document.querySelectorAll('.va-card').forEach(card => {
-    card.addEventListener('click', () => {
-      const id = card.dataset.vaId;
-      window.location.hash = `/voice-actor/${id}`;
-    });
-  });
-}
+// Card click listeners no longer needed - using anchor links
 
 function renderDetailPage(va) {
   const main = document.getElementById('main-content');
+  const malUrl = `https://myanimelist.net/people/${va.malId}`;
 
   main.innerHTML = `
     <button class="back-btn" onclick="window.location.hash='/'">← Back to List</button>
@@ -118,7 +111,7 @@ function renderDetailPage(va) {
     <div class="detail-header">
       <img class="detail-image" src="${va.imageUrl || 'https://via.placeholder.com/200x267'}" alt="${va.name}">
       <div class="detail-info">
-        <h1>${va.name}</h1>
+        <h1><a href="${malUrl}" target="_blank" rel="noopener" class="mal-link">${va.name} ↗</a></h1>
         <p>${va.totalSeasonalShows} show${va.totalSeasonalShows !== 1 ? 's' : ''} this season</p>
         <p style="margin-top: 0.5rem">${va.allTimeRoles?.length || 0} total career roles</p>
       </div>
@@ -154,20 +147,29 @@ function renderRolesGrid(roles) {
 
   return `
     <div class="roles-grid">
-      ${roles.map(role => `
-        <div class="role-card">
-          <img class="role-anime-image" src="${role.anime?.imageUrl || ''}" alt="${role.anime?.title || ''}"
-               onerror="this.src='https://via.placeholder.com/80x110?text=?'">
-          <div class="role-info">
-            <div class="role-anime-title">${role.anime?.title || 'Unknown Anime'}</div>
-            <div class="role-character">
-              <img class="role-character-image" src="${role.character?.imageUrl || ''}" alt="${role.character?.name || ''}"
-                   onerror="this.src='https://via.placeholder.com/32?text=?'">
-              <span>as ${role.character?.name || 'Unknown Character'}</span>
+      ${roles.map(role => {
+    const animeUrl = role.anime?.malId ? `https://myanimelist.net/anime/${role.anime.malId}` : '#';
+    const characterUrl = role.character?.malId ? `https://myanimelist.net/character/${role.character.malId}` : '#';
+
+    return `
+          <div class="role-card">
+            <a href="${animeUrl}" target="_blank" rel="noopener" class="role-anime-link">
+              <img class="role-anime-image" src="${role.anime?.imageUrl || ''}" alt="${role.anime?.title || ''}"
+                   onerror="this.src='https://via.placeholder.com/80x110?text=?'">
+            </a>
+            <div class="role-info">
+              <a href="${animeUrl}" target="_blank" rel="noopener" class="role-anime-title">${role.anime?.title || 'Unknown Anime'}</a>
+              <div class="role-character">
+                <a href="${characterUrl}" target="_blank" rel="noopener" class="role-character-link">
+                  <img class="role-character-image" src="${role.character?.imageUrl || ''}" alt="${role.character?.name || ''}"
+                       onerror="this.src='https://via.placeholder.com/48?text=?'">
+                </a>
+                <span>as <a href="${characterUrl}" target="_blank" rel="noopener">${role.character?.name || 'Unknown Character'}</a></span>
+              </div>
             </div>
           </div>
-        </div>
-      `).join('')}
+        `;
+  }).join('')}
     </div>
   `;
 }

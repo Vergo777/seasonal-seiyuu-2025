@@ -461,11 +461,63 @@ a:hover {
 }
 
 .role-character-image {
-  width: 28px;
-  height: 28px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   object-fit: cover;
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
+  transition: border-color 0.2s;
+}
+
+.role-character-image:hover {
+  border-color: var(--accent);
+}
+
+/* ===== LINK STYLES ===== */
+.va-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.logo-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.mal-link {
+  color: var(--text-hero);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.mal-link:hover {
+  color: var(--accent);
+}
+
+.role-anime-title {
+  color: var(--text-hero);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a.role-anime-title:hover {
+  color: var(--accent);
+}
+
+.role-character a {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.role-character a:hover {
+  color: var(--accent-soft);
+}
+
+.role-anime-link {
+  display: block;
+  flex-shrink: 0;
 }
 
 /* ===== FOOTER - Magazine colophon ===== */
