@@ -39,11 +39,13 @@ public class JikanApiService {
 
     /**
      * Fetches all anime from the current season (handles pagination).
+     * Returns result with both anime list and expected total for validation.
      */
-    public List<Anime> getCurrentSeasonAnime() {
+    public SeasonAnimeResult getCurrentSeasonAnime() {
         List<Anime> allAnime = new ArrayList<>();
         int page = 1;
         boolean hasNextPage = true;
+        int expectedTotal = 0;
 
         while (hasNextPage) {
             log.info("Fetching season anime page {}", page);
@@ -68,6 +70,11 @@ public class JikanApiService {
                     }
                 }
 
+                // Extract expected total from pagination on first page
+                if (page == 1) {
+                    expectedTotal = root.path("pagination").path("items").path("total").asInt(0);
+                }
+
                 hasNextPage = root.path("pagination").path("has_next_page").asBoolean(false);
                 page++;
 
@@ -78,8 +85,17 @@ public class JikanApiService {
             }
         }
 
-        log.info("Fetched {} anime from current season", allAnime.size());
-        return allAnime;
+        log.info("Fetched {} anime from current season (expected: {})", allAnime.size(), expectedTotal);
+        return new SeasonAnimeResult(allAnime, expectedTotal);
+    }
+
+    /**
+     * Result of fetching seasonal anime, includes expected total for validation.
+     */
+    public record SeasonAnimeResult(List<Anime> anime, int expectedTotal) {
+        public boolean isComplete() {
+            return anime.size() == expectedTotal && expectedTotal > 0;
+        }
     }
 
     /**

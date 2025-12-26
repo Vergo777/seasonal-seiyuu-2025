@@ -2,6 +2,7 @@ package com.seasonalseiyuu.service;
 
 import com.seasonalseiyuu.model.*;
 import com.seasonalseiyuu.service.JikanApiService.CharacterVoiceActor;
+import com.seasonalseiyuu.service.JikanApiService.SeasonAnimeResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -78,11 +79,20 @@ public class SeasonDataService {
             Optional<RefreshProgress> existingProgress = cacheService.loadProgress();
 
             // Step 1: Fetch all seasonal anime
-            List<Anime> seasonalAnime = jikanApi.getCurrentSeasonAnime();
+            SeasonAnimeResult animeResult = jikanApi.getCurrentSeasonAnime();
+            List<Anime> seasonalAnime = animeResult.anime();
             if (seasonalAnime.isEmpty()) {
                 log.error("No anime found for current season");
                 updateStatus("Error: No anime found", 0, 0);
                 return;
+            }
+
+            // Validation check #1: Anime count matches expected
+            if (!animeResult.isComplete()) {
+                log.warn("VALIDATION WARNING: Fetched {} anime but API reports {} expected",
+                        seasonalAnime.size(), animeResult.expectedTotal());
+            } else {
+                log.info("VALIDATION PASSED: Anime count matches expected ({})", animeResult.expectedTotal());
             }
 
             String season = seasonalAnime.get(0).season();
@@ -125,6 +135,12 @@ public class SeasonDataService {
                         (int) ((processed / (double) total) * 50), 100);
 
                 List<CharacterVoiceActor> characters = jikanApi.getAnimeCharacters(anime.malId());
+
+                // Validation check #2: Track anime with zero characters
+                if (characters.isEmpty()) {
+                    log.warn("VALIDATION WARNING: Anime '{}' (ID: {}) returned 0 characters",
+                            anime.title(), anime.malId());
+                }
 
                 for (CharacterVoiceActor cva : characters) {
                     int vaId = cva.voiceActorMalId();
