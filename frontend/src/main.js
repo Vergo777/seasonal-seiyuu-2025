@@ -193,6 +193,9 @@ function renderRolesGrid(roles) {
 function renderCompareSelectPage() {
   const main = document.getElementById('main-content');
 
+  // Sort VAs by seasonal shows (popularity) descending
+  const sortedVAs = [...allVoiceActors].sort((a, b) => b.totalSeasonalShows - a.totalSeasonalShows);
+
   main.innerHTML = `
     <button class="back-btn" onclick="window.location.hash='/'">← Back to List</button>
     
@@ -203,20 +206,24 @@ function renderCompareSelectPage() {
       <div class="compare-selectors">
         <div class="compare-selector">
           <label>Voice Actor 1</label>
-          <select id="va-select-1" class="va-select">
-            <option value="">Select a voice actor...</option>
-            ${allVoiceActors.map(va => `<option value="${va.malId}">${va.name}</option>`).join('')}
-          </select>
+          <div class="va-search-container" id="va-search-1">
+            <input type="text" class="va-search-input" placeholder="Search voice actors..." autocomplete="off">
+            <div class="va-search-dropdown"></div>
+            <input type="hidden" class="va-selected-id">
+            <div class="va-selected-preview"></div>
+          </div>
         </div>
         
         <div class="compare-vs">VS</div>
         
         <div class="compare-selector">
           <label>Voice Actor 2</label>
-          <select id="va-select-2" class="va-select">
-            <option value="">Select a voice actor...</option>
-            ${allVoiceActors.map(va => `<option value="${va.malId}">${va.name}</option>`).join('')}
-          </select>
+          <div class="va-search-container" id="va-search-2">
+            <input type="text" class="va-search-input" placeholder="Search voice actors..." autocomplete="off">
+            <div class="va-search-dropdown"></div>
+            <input type="hidden" class="va-selected-id">
+            <div class="va-selected-preview"></div>
+          </div>
         </div>
       </div>
       
@@ -224,20 +231,99 @@ function renderCompareSelectPage() {
     </div>
   `;
 
-  const select1 = document.getElementById('va-select-1');
-  const select2 = document.getElementById('va-select-2');
   const compareBtn = document.getElementById('compare-btn');
 
-  function updateCompareButton() {
-    compareBtn.disabled = !select1.value || !select2.value || select1.value === select2.value;
+  function setupVASearch(containerId) {
+    const container = document.getElementById(containerId);
+    const input = container.querySelector('.va-search-input');
+    const dropdown = container.querySelector('.va-search-dropdown');
+    const hiddenInput = container.querySelector('.va-selected-id');
+    const preview = container.querySelector('.va-selected-preview');
+
+    function renderDropdown(vas) {
+      dropdown.innerHTML = vas.slice(0, 50).map(va => `
+        <div class="va-dropdown-item" data-id="${va.malId}" data-name="${va.name}" data-image="${va.imageUrl || ''}">
+          <img src="${va.imageUrl || 'https://via.placeholder.com/40x50'}" alt="" class="va-dropdown-img" 
+               onerror="this.src='https://via.placeholder.com/40x50'">
+          <div class="va-dropdown-info">
+            <span class="va-dropdown-name">${va.name}</span>
+            <span class="va-dropdown-shows">${va.totalSeasonalShows} shows this season</span>
+          </div>
+        </div>
+      `).join('');
+      dropdown.style.display = vas.length ? 'block' : 'none';
+    }
+
+    function selectVA(id, name, imageUrl) {
+      hiddenInput.value = id;
+      input.value = '';
+      input.style.display = 'none';
+      preview.innerHTML = `
+        <div class="va-preview-card">
+          <img src="${imageUrl || 'https://via.placeholder.com/50x60'}" alt="${name}" class="va-preview-img"
+               onerror="this.src='https://via.placeholder.com/50x60'">
+          <span class="va-preview-name">${name}</span>
+          <button class="va-preview-clear" type="button">✕</button>
+        </div>
+      `;
+      preview.style.display = 'block';
+      dropdown.style.display = 'none';
+      updateCompareButton();
+
+      preview.querySelector('.va-preview-clear').addEventListener('click', () => {
+        hiddenInput.value = '';
+        preview.style.display = 'none';
+        preview.innerHTML = '';
+        input.style.display = 'block';
+        input.focus();
+        updateCompareButton();
+      });
+    }
+
+    input.addEventListener('focus', () => {
+      const query = input.value.toLowerCase().trim();
+      const filtered = query
+        ? sortedVAs.filter(va => va.name.toLowerCase().includes(query))
+        : sortedVAs;
+      renderDropdown(filtered);
+    });
+
+    input.addEventListener('input', () => {
+      const query = input.value.toLowerCase().trim();
+      const filtered = query
+        ? sortedVAs.filter(va => va.name.toLowerCase().includes(query))
+        : sortedVAs;
+      renderDropdown(filtered);
+    });
+
+    dropdown.addEventListener('click', (e) => {
+      const item = e.target.closest('.va-dropdown-item');
+      if (item) {
+        selectVA(item.dataset.id, item.dataset.name, item.dataset.image);
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!container.contains(e.target)) {
+        dropdown.style.display = 'none';
+      }
+    });
   }
 
-  select1.addEventListener('change', updateCompareButton);
-  select2.addEventListener('change', updateCompareButton);
+  function updateCompareButton() {
+    const id1 = document.querySelector('#va-search-1 .va-selected-id').value;
+    const id2 = document.querySelector('#va-search-2 .va-selected-id').value;
+    compareBtn.disabled = !id1 || !id2 || id1 === id2;
+  }
+
+  setupVASearch('va-search-1');
+  setupVASearch('va-search-2');
 
   compareBtn.addEventListener('click', () => {
-    if (select1.value && select2.value) {
-      window.location.hash = `/compare/${select1.value}/${select2.value}`;
+    const id1 = document.querySelector('#va-search-1 .va-selected-id').value;
+    const id2 = document.querySelector('#va-search-2 .va-selected-id').value;
+    if (id1 && id2) {
+      window.location.hash = `/compare/${id1}/${id2}`;
     }
   });
 }
@@ -246,14 +332,21 @@ function renderCompareResults(data) {
   const main = document.getElementById('main-content');
   const { va1, va2, sharedAnime } = data;
 
+  const va1MalUrl = `https://myanimelist.net/people/${va1.malId}`;
+  const va2MalUrl = `https://myanimelist.net/people/${va2.malId}`;
+
   main.innerHTML = `
     <button class="back-btn" onclick="window.location.hash='/compare'">← Change Selection</button>
     
     <div class="compare-results">
       <div class="compare-header">
         <div class="compare-va compare-va-1">
-          <img class="compare-va-image" src="${va1.imageUrl || 'https://via.placeholder.com/150x200'}" alt="${va1.name}">
-          <h2 class="compare-va-name">${va1.name}</h2>
+          <a href="${va1MalUrl}" target="_blank" rel="noopener">
+            <img class="compare-va-image" src="${va1.imageUrl || 'https://via.placeholder.com/150x200'}" alt="${va1.name}">
+          </a>
+          <h2 class="compare-va-name">
+            <a href="${va1MalUrl}" target="_blank" rel="noopener" class="mal-link">${va1.name} ↗</a>
+          </h2>
           <div class="compare-va-stats">
             <div class="compare-stat">
               <span class="compare-stat-value">${va1.totalCareerRoles}</span>
@@ -272,8 +365,12 @@ function renderCompareResults(data) {
         </div>
         
         <div class="compare-va compare-va-2">
-          <img class="compare-va-image" src="${va2.imageUrl || 'https://via.placeholder.com/150x200'}" alt="${va2.name}">
-          <h2 class="compare-va-name">${va2.name}</h2>
+          <a href="${va2MalUrl}" target="_blank" rel="noopener">
+            <img class="compare-va-image" src="${va2.imageUrl || 'https://via.placeholder.com/150x200'}" alt="${va2.name}">
+          </a>
+          <h2 class="compare-va-name">
+            <a href="${va2MalUrl}" target="_blank" rel="noopener" class="mal-link">${va2.name} ↗</a>
+          </h2>
           <div class="compare-va-stats">
             <div class="compare-stat">
               <span class="compare-stat-value">${va2.totalCareerRoles}</span>
@@ -290,20 +387,28 @@ function renderCompareResults(data) {
       ${sharedAnime.length > 0 ? `
         <h3 class="shared-title">🤝 Shared Anime</h3>
         <div class="shared-anime-grid">
-          ${sharedAnime.map(anime => `
+          ${sharedAnime.map(anime => {
+    const animeUrl = `https://myanimelist.net/anime/${anime.malId}`;
+    return `
             <div class="shared-anime-card">
-              <img class="shared-anime-image" src="${anime.imageUrl || ''}" alt="${anime.title}"
-                   onerror="this.src='https://via.placeholder.com/80x110?text=?'">
+              <a href="${animeUrl}" target="_blank" rel="noopener">
+                <img class="shared-anime-image" src="${anime.imageUrl || ''}" alt="${anime.title}"
+                     onerror="this.src='https://via.placeholder.com/80x110?text=?'">
+              </a>
               <div class="shared-anime-info">
-                <div class="shared-anime-title">${anime.title}</div>
+                <a href="${animeUrl}" target="_blank" rel="noopener" class="shared-anime-title mal-link">${anime.title} ↗</a>
                 <div class="shared-characters">
-                  <span class="char-1">${anime.characters1.join(', ')}</span>
+                  <span class="char-1">${anime.characters1.map(c =>
+      c.malId ? `<a href="https://myanimelist.net/character/${c.malId}" target="_blank" rel="noopener" class="char-link">${c.name}</a>` : c.name
+    ).join(', ')}</span>
                   <span class="char-arrow">↔</span>
-                  <span class="char-2">${anime.characters2.join(', ')}</span>
+                  <span class="char-2">${anime.characters2.map(c =>
+      c.malId ? `<a href="https://myanimelist.net/character/${c.malId}" target="_blank" rel="noopener" class="char-link">${c.name}</a>` : c.name
+    ).join(', ')}</span>
                 </div>
               </div>
             </div>
-          `).join('')}
+          `}).join('')}
         </div>
       ` : `
         <div class="no-shared">

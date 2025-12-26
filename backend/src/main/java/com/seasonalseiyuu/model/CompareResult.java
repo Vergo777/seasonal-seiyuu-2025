@@ -37,7 +37,13 @@ public record CompareResult(
             int malId,
             String title,
             String imageUrl,
-            List<String> characters1,
-            List<String> characters2) {
+            List<CharacterRef> characters1,
+            List<CharacterRef> characters2) {
+    }
+
+    /**
+     * Reference to a character with name and MAL ID for linking.
+     */
+    public record CharacterRef(int malId, String name) {
     }
 }
