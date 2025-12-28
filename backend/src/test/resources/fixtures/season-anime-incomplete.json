@@ -1,0 +1,37 @@
+{
+    "pagination": {
+        "last_visible_page": 1,
+        "has_next_page": false,
+        "items": {
+            "count": 2,
+            "total": 5,
+            "per_page": 25
+        }
+    },
+    "data": [
+        {
+            "mal_id": 1,
+            "title": "A1",
+            "images": {
+                "jpg": {
+                    "large_image_url": ""
+                }
+            },
+            "synopsis": "",
+            "season": "fall",
+            "year": 2025
+        },
+        {
+            "mal_id": 2,
+            "title": "A2",
+            "images": {
+                "jpg": {
+                    "large_image_url": ""
+                }
+            },
+            "synopsis": "",
+            "season": "fall",
+            "year": 2025
+        }
+    ]
+}

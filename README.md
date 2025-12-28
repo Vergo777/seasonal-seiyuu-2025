@@ -8,8 +8,6 @@ Discover voice actors (seiyuu) in the current anime season and explore their rol
 - **Frontend**: Vite + Vanilla JS (built to `backend/src/main/resources/static/`)
 - **Data**: Jikan API v4 (MyAnimeList) → cached to local JSON file
 
-- **Data**: Jikan API v4 (MyAnimeList) → cached to local JSON file
-
 ## ✨ Features
 
 - **Voice Actor Grid**: See all voice actors in the current season, sorted by popularity.

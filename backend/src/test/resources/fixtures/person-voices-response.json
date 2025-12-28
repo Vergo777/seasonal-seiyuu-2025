@@ -1,0 +1,64 @@
+{
+    "data": [
+        {
+            "anime": {
+                "mal_id": 12345,
+                "title": "Test Anime 1",
+                "images": {
+                    "jpg": {
+                        "large_image_url": "https://example.com/anime1.jpg"
+                    }
+                }
+            },
+            "character": {
+                "mal_id": 1001,
+                "name": "Test Character 1",
+                "images": {
+                    "jpg": {
+                        "image_url": "https://example.com/char1.jpg"
+                    }
+                }
+            }
+        },
+        {
+            "anime": {
+                "mal_id": 12346,
+                "title": "Test Anime 2",
+                "images": {
+                    "jpg": {
+                        "large_image_url": "https://example.com/anime2.jpg"
+                    }
+                }
+            },
+            "character": {
+                "mal_id": 1003,
+                "name": "Test Character 3",
+                "images": {
+                    "jpg": {
+                        "image_url": "https://example.com/char3.jpg"
+                    }
+                }
+            }
+        },
+        {
+            "anime": {
+                "mal_id": 99999,
+                "title": "Old Anime",
+                "images": {
+                    "jpg": {
+                        "large_image_url": "https://example.com/old.jpg"
+                    }
+                }
+            },
+            "character": {
+                "mal_id": 1099,
+                "name": "Old Character",
+                "images": {
+                    "jpg": {
+                        "image_url": "https://example.com/oldchar.jpg"
+                    }
+                }
+            }
+        }
+    ]
+}

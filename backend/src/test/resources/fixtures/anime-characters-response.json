@@ -1,0 +1,68 @@
+{
+    "data": [
+        {
+            "character": {
+                "mal_id": 1001,
+                "name": "Test Character 1",
+                "images": {
+                    "jpg": {
+                        "image_url": "https://example.com/char1.jpg"
+                    }
+                }
+            },
+            "role": "Main",
+            "voice_actors": [
+                {
+                    "person": {
+                        "mal_id": 2001,
+                        "name": "Suzuki, Taro",
+                        "images": {
+                            "jpg": {
+                                "image_url": "https://example.com/va1.jpg"
+                            }
+                        }
+                    },
+                    "language": "Japanese"
+                },
+                {
+                    "person": {
+                        "mal_id": 3001,
+                        "name": "Smith, John",
+                        "images": {
+                            "jpg": {
+                                "image_url": "https://example.com/va_eng.jpg"
+                            }
+                        }
+                    },
+                    "language": "English"
+                }
+            ]
+        },
+        {
+            "character": {
+                "mal_id": 1002,
+                "name": "Test Character 2",
+                "images": {
+                    "jpg": {
+                        "image_url": "https://example.com/char2.jpg"
+                    }
+                }
+            },
+            "role": "Supporting",
+            "voice_actors": [
+                {
+                    "person": {
+                        "mal_id": 2002,
+                        "name": "Tanaka, Hanako",
+                        "images": {
+                            "jpg": {
+                                "image_url": "https://example.com/va2.jpg"
+                            }
+                        }
+                    },
+                    "language": "Japanese"
+                }
+            ]
+        }
+    ]
+}

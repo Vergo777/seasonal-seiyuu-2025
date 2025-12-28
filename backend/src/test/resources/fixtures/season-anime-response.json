@@ -1,0 +1,52 @@
+{
+    "pagination": {
+        "last_visible_page": 1,
+        "has_next_page": false,
+        "items": {
+            "count": 3,
+            "total": 3,
+            "per_page": 25
+        }
+    },
+    "data": [
+        {
+            "mal_id": 12345,
+            "title": "Test Anime 1",
+            "title_english": "Test Anime 1 English",
+            "images": {
+                "jpg": {
+                    "large_image_url": "https://example.com/anime1.jpg"
+                }
+            },
+            "synopsis": "A test anime synopsis.",
+            "season": "fall",
+            "year": 2025
+        },
+        {
+            "mal_id": 12346,
+            "title": "Test Anime 2",
+            "title_english": null,
+            "images": {
+                "jpg": {
+                    "large_image_url": "https://example.com/anime2.jpg"
+                }
+            },
+            "synopsis": "Another test anime.",
+            "season": "fall",
+            "year": 2025
+        },
+        {
+            "mal_id": 12347,
+            "title": "Test Anime 3",
+            "title_english": "Test Anime 3 English",
+            "images": {
+                "jpg": {
+                    "large_image_url": "https://example.com/anime3.jpg"
+                }
+            },
+            "synopsis": "",
+            "season": "fall",
+            "year": 2025
+        }
+    ]
+}
