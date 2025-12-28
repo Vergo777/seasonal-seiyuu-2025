@@ -134,23 +134,13 @@ a:hover {
 .logo {
   font-family: 'Bebas Neue', Impact, sans-serif;
   font-size: 2.5rem;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.2em;
   color: var(--text-hero);
   text-transform: uppercase;
   position: relative;
 }
 
-.logo::after {
-  content: '季節の声優';
-  font-family: 'Crimson Pro', serif;
-  font-size: 0.45rem;
-  letter-spacing: 0.3em;
-  position: absolute;
-  bottom: -0.5rem;
-  left: 0;
-  color: var(--text-muted);
-  font-weight: 400;
-}
+
 
 .season-info {
   text-align: right;
@@ -237,14 +227,7 @@ a:hover {
   pointer-events: none;
 }
 
-.search-container::before {
-  content: '検索';
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
-}
+
 
 .search-input {
   flex: 1;
@@ -623,11 +606,7 @@ a.role-anime-title:hover {
     display: flex;
   }
 
-  .logo::after {
-    position: static;
-    display: block;
-    margin-top: 0.25rem;
-  }
+
 
   .header-right {
     flex-direction: column;
@@ -678,9 +657,7 @@ a.role-anime-title:hover {
     align-items: stretch;
   }
 
-  .search-container::before {
-    display: none;
-  }
+
 
   .roles-grid {
     grid-template-columns: 1fr;

@@ -15,11 +15,20 @@ function VoiceActorCard({ voiceActor }: Props) {
                     className="va-card-image"
                     loading="lazy"
                 />
-                <div className="va-card-badge">{voiceActor.totalSeasonalShows}</div>
             </div>
             <div className="va-card-content">
                 <h3 className="va-card-name">{voiceActor.name}</h3>
-                <p className="va-card-roles">{voiceActor.totalCareerRoles} career roles</p>
+
+                <div className="va-card-stats">
+                    <div className="va-stat-main">
+                        <span className="stat-value">{voiceActor.totalSeasonalShows}</span>
+                        <span className="stat-label">SEASON SHOWS</span>
+                    </div>
+                    <div className="va-stat-secondary">
+                        <span className="stat-value-sm">{voiceActor.totalCareerRoles}</span>
+                        <span className="stat-label-sm">Roles</span>
+                    </div>
+                </div>
             </div>
         </div>
     )

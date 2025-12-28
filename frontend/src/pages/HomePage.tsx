@@ -60,14 +60,30 @@ function HomePage() {
         )
     }
 
+    const getSeasonEmoji = (season: string) => {
+        const s = season.toLowerCase()
+        if (s.includes('spring')) return '🌸'
+        if (s.includes('summer')) return '☀️'
+        if (s.includes('fall') || s.includes('autumn')) return '🍂'
+        if (s.includes('winter')) return '❄️'
+        return '📅'
+    }
+
     return (
         <div className="home-page">
             {seasonInfo && seasonInfo.season && (
                 <div className="season-header">
-                    <span className="season-badge">
-                        {seasonInfo.season.charAt(0).toUpperCase() + seasonInfo.season.slice(1)} {seasonInfo.year}
-                    </span>
-                    <span className="va-count">{seasonInfo.voiceActorCount} Voice Actors</span>
+                    <div className="season-badge-glow">
+                        <span className="season-emoji">{getSeasonEmoji(seasonInfo.season)}</span>
+                        <span className="season-name">
+                            {seasonInfo.season.toUpperCase()} {seasonInfo.year}
+                        </span>
+                        <div className="season-divider"></div>
+                        <span className="season-count">
+                            <span className="count-val">{seasonInfo.voiceActorCount}</span>
+                            <span className="count-label">ACTORS</span>
+                        </span>
+                    </div>
                 </div>
             )}
 

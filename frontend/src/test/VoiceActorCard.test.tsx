@@ -17,17 +17,16 @@ describe('VoiceActorCard', () => {
         expect(screen.getByText('Sugita, Tomokazu')).toBeInTheDocument()
     })
 
-    it('renders seasonal shows badge', () => {
+    it('renders seasonal shows count', () => {
         render(<VoiceActorCard voiceActor={mockVoiceActor} />)
-
-        // The badge shows the number of seasonal shows
-        expect(screen.getByText('18')).toBeInTheDocument()
+        expect(screen.getByText('18')).toBeInTheDocument() // Main stat value
+        expect(screen.getByText('SEASON SHOWS')).toBeInTheDocument() // Main stat label
     })
 
     it('renders career roles count', () => {
         render(<VoiceActorCard voiceActor={mockVoiceActor} />)
-
-        expect(screen.getByText('500 career roles')).toBeInTheDocument()
+        expect(screen.getByText('500')).toBeInTheDocument() // Secondary stat value
+        expect(screen.getByText('Roles')).toBeInTheDocument() // Secondary stat label
     })
 
     it('renders voice actor image', () => {

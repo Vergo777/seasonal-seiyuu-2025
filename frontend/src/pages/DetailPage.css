@@ -1,15 +1,20 @@
+/* Detail Page Styling - Enhanced Layout */
+
 .detail-page {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: 2rem 1rem;
+    animation: fadeSlideUp 0.5s ease-out;
 }
 
 .back-link {
     display: inline-block;
-    color: rgba(255, 255, 255, 0.6);
-    text-decoration: none;
     margin-bottom: 2rem;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
     transition: color 0.2s;
+    text-decoration: none;
 }
 
 .back-link:hover {
@@ -17,74 +22,150 @@
 }
 
 .va-header {
-    display: flex;
-    gap: 2rem;
-    margin-bottom: 2rem;
-    padding: 2rem;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    /* Fixed image width + flexible content */
+    gap: 3rem;
+    margin-bottom: 3rem;
     background: linear-gradient(145deg, var(--bg-panel) 0%, var(--bg-deep) 100%);
     border: 1px solid var(--border);
     border-radius: 20px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Add a subtle decorative glow behind */
+.va-header::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100%;
+    background: radial-gradient(circle at right, rgba(56, 189, 248, 0.05), transparent 70%);
+    pointer-events: none;
 }
 
 .va-portrait {
-    width: 200px;
-    height: 280px;
-    object-fit: cover;
+    width: 100%;
+    height: auto;
     border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
 }
 
 .va-info {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    /* Center vertically against the image */
+    z-index: 2;
 }
 
 .va-name {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin: 0 0 1rem;
+    font-size: 4rem;
+    font-weight: 400;
+    /* Bebas Neue is naturally bold */
+    margin: 0 0 2rem;
+    letter-spacing: 0.05em;
+    font-family: 'Bebas Neue', display;
+    line-height: 0.9;
 }
 
 .mal-name-link {
-    color: white;
+    color: var(--text-hero);
     text-decoration: none;
+    transition: color 0.2s;
 }
 
 .mal-name-link:hover {
     color: var(--accent);
 }
 
-.va-seasonal-count {
-    color: rgba(255, 255, 255, 0.8);
-    margin: 0 0 0.5rem;
+/* New Stats Grid */
+.va-header-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+    margin-top: auto;
 }
 
-.va-career-count {
-    color: rgba(255, 255, 255, 0.6);
-    margin: 0;
+.header-stat-box {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: var(--bg-deep);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.header-stat-box.primary {
+    border-color: var(--accent-glow);
+    background: rgba(255, 126, 182, 0.05);
+}
+
+.header-stat-box:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent);
+}
+
+.stat-icon {
+    font-size: 2rem;
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.5rem;
+    line-height: 1;
+    color: var(--text-hero);
+}
+
+.header-stat-box.primary .stat-number {
+    color: var(--accent);
+    text-shadow: 0 0 10px var(--accent-glow);
+}
+
+.stat-desc {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+    font-weight: 700;
 }
 
 /* Tabs */
 .tabs {
     display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1.5rem;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1rem;
 }
 
 .tab {
-    padding: 0.75rem 1.5rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    color: rgba(255, 255, 255, 0.7);
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.25rem;
+    padding: 0.5rem 1.5rem;
     cursor: pointer;
-    font-size: 1rem;
+    border-radius: 8px;
     transition: all 0.2s;
+    letter-spacing: 0.05em;
 }
 
 .tab:hover {
-    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-hero);
+    background: var(--bg-panel);
 }
 
 .tab.active {
@@ -97,24 +178,30 @@
 
 /* Roles Grid */
 .roles-grid {
+    gap: 2rem;
+}
+
+/* Roles Grid */
+.roles-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 2rem;
 }
 
 .role-card {
     display: flex;
     gap: 1rem;
-    padding: 1rem;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
     border-radius: 12px;
+    padding: 1rem;
     transition: all 0.2s ease;
 }
 
 .role-card:hover {
     background: var(--bg-elevated);
     border-color: var(--accent-glow);
+    transform: translateY(-2px);
 }
 
 .role-anime-link {
@@ -122,26 +209,33 @@
 }
 
 .role-anime-img {
-    width: 80px;
-    height: 110px;
+    width: 60px;
+    height: 85px;
     object-fit: cover;
     border-radius: 6px;
 }
 
 .role-info {
     flex: 1;
-    min-width: 0;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: space-between;
+    min-width: 0;
+    /* Prevent flex blowouts */
 }
 
 .role-anime-title {
-    color: white;
-    font-weight: 500;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    color: var(--text-hero);
     text-decoration: none;
-    display: block;
+    line-height: 1.1;
     margin-bottom: 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    letter-spacing: 0.05em;
 }
 
 .role-anime-title:hover {
@@ -151,49 +245,48 @@
 .role-character {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
 }
 
 .role-character-img {
     width: 40px;
     height: 40px;
-    object-fit: cover;
     border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--border);
 }
 
 .role-character a {
     color: var(--secondary);
     text-decoration: none;
+    font-weight: 500;
 }
 
 .role-character a:hover {
     text-decoration: underline;
 }
 
-.role-character span {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.9rem;
-}
-
-.empty-state {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 3rem;
-    color: rgba(255, 255, 255, 0.5);
-}
-
-@media (max-width: 600px) {
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
     .va-header {
-        flex-direction: column;
-        align-items: center;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
         text-align: center;
     }
 
-    .va-name {
-        font-size: 1.75rem;
+    .va-portrait {
+        max-width: 200px;
+        margin: 0 auto;
     }
 
-    .roles-grid {
+    .va-name {
+        font-size: 3rem;
+        text-align: center;
+    }
+
+    .va-header-stats {
         grid-template-columns: 1fr;
     }
 }
