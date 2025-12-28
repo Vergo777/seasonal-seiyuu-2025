@@ -5,7 +5,8 @@ Discover voice actors (seiyuu) in the current anime season and explore their rol
 ## Tech Stack
 
 - **Backend**: Spring Boot 3.5.5 + Java 25 + Gradle 9.1.0
-- **Frontend**: Vite + Vanilla JS (built to `backend/src/main/resources/static/`)
+- **Frontend**: React 18 + TypeScript + Vite (built to `backend/src/main/resources/static/`)
+- **Testing**: Vitest + React Testing Library (frontend), JUnit 5 + MockWebServer (backend)
 - **Data**: Jikan API v4 (MyAnimeList) → cached to local JSON file
 
 ## ✨ Features
@@ -20,9 +21,28 @@ Discover voice actors (seiyuu) in the current anime season and explore their rol
 ## 🚀 Quick Start (Development)
 
 ```bash
-# Build frontend
+# Install frontend dependencies
 cd frontend
 npm install
+
+# Run frontend dev server (hot reload)
+npm run dev
+# → http://localhost:5173/seiyuu/
+
+# Run frontend tests
+npm test
+
+# In another terminal, start backend
+cd backend
+./gradlew bootRun
+# → API at http://localhost:8080/seiyuu/api/
+```
+
+### Production Build
+
+```bash
+# Build frontend (outputs to backend/static)
+cd frontend
 npm run build
 
 # Start backend (serves frontend)

@@ -1,0 +1,197 @@
+.detail-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+.back-link {
+    display: inline-block;
+    color: rgba(255, 255, 255, 0.6);
+    text-decoration: none;
+    margin-bottom: 2rem;
+    transition: color 0.2s;
+}
+
+.back-link:hover {
+    color: #e94560;
+}
+
+.va-header {
+    display: flex;
+    gap: 2rem;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: linear-gradient(145deg, rgba(30, 30, 50, 0.6) 0%, rgba(20, 20, 35, 0.8) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+}
+
+.va-portrait {
+    width: 200px;
+    height: 280px;
+    object-fit: cover;
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.va-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.va-name {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 1rem;
+}
+
+.mal-name-link {
+    color: white;
+    text-decoration: none;
+}
+
+.mal-name-link:hover {
+    color: #e94560;
+}
+
+.va-seasonal-count {
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0 0 0.5rem;
+}
+
+.va-career-count {
+    color: rgba(255, 255, 255, 0.6);
+    margin: 0;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.tab {
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.tab:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.tab.active {
+    background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+    border-color: transparent;
+    color: white;
+}
+
+/* Roles Grid */
+.roles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+}
+
+.role-card {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.role-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(233, 69, 96, 0.3);
+}
+
+.role-anime-link {
+    flex-shrink: 0;
+}
+
+.role-anime-img {
+    width: 80px;
+    height: 110px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.role-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.role-anime-title {
+    color: white;
+    font-weight: 500;
+    text-decoration: none;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.role-anime-title:hover {
+    color: #e94560;
+}
+
+.role-character {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.role-character-img {
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.role-character a {
+    color: #64b5f6;
+    text-decoration: none;
+}
+
+.role-character a:hover {
+    text-decoration: underline;
+}
+
+.role-character span {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+}
+
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+@media (max-width: 600px) {
+    .va-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .va-name {
+        font-size: 1.75rem;
+    }
+
+    .roles-grid {
+        grid-template-columns: 1fr;
+    }
+}
