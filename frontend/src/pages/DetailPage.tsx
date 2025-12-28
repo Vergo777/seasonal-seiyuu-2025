@@ -52,68 +52,76 @@ function DetailPage() {
         <div className="detail-page">
             <Link to="/" className="back-link">← Back to list</Link>
 
-            <div className="va-header">
-                <img
-                    src={voiceActor.imageUrl || '/placeholder-va.png'}
-                    alt={voiceActor.name}
-                    className="va-portrait"
-                />
-                <div className="va-info">
-                    <h1 className="va-name">
-                        <a
-                            href={`https://myanimelist.net/people/${voiceActor.malId}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="mal-name-link"
+            <div className="detail-layout">
+                {/* Left Sidebar: Profile & Stats */}
+                <aside className="detail-sidebar">
+                    <div className="sidebar-inner">
+                        <img
+                            src={voiceActor.imageUrl || '/placeholder-va.png'}
+                            alt={voiceActor.name}
+                            className="va-portrait"
+                        />
+
+                        <div className="sidebar-info">
+                            <h1 className="va-name-sidebar">
+                                <a
+                                    href={`https://myanimelist.net/people/${voiceActor.malId}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mal-name-link"
+                                >
+                                    {voiceActor.name} ↗
+                                </a>
+                            </h1>
+
+                            <div className="sidebar-stats">
+                                <div className="sidebar-stat-row">
+                                    <span className="stat-icon">🎭</span>
+                                    <div className="stat-content-mini">
+                                        <span className="stat-value">{voiceActor.totalSeasonalShows}</span>
+                                        <span className="stat-label">SEASON SHOWS</span>
+                                    </div>
+                                </div>
+                                <div className="sidebar-stat-row">
+                                    <span className="stat-icon">🎬</span>
+                                    <div className="stat-content-mini">
+                                        <span className="stat-value">{allTimeRoles.length}</span>
+                                        <span className="stat-label">CAREER ROLES</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                {/* Right Content: Tabs & Grid */}
+                <main className="detail-content">
+                    <div className="tabs">
+                        <button
+                            className={`tab ${activeTab === 'seasonal' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('seasonal')}
                         >
-                            {voiceActor.name} ↗
-                        </a>
-                    </h1>
-
-                    <div className="va-header-stats">
-                        <div className="header-stat-box primary">
-                            <span className="stat-icon">🎭</span>
-                            <div className="stat-content">
-                                <span className="stat-number">{voiceActor.totalSeasonalShows}</span>
-                                <span className="stat-desc">SHOWS THIS SEASON</span>
-                            </div>
-                        </div>
-
-                        <div className="header-stat-box">
-                            <span className="stat-icon">🎬</span>
-                            <div className="stat-content">
-                                <span className="stat-number">{allTimeRoles.length}</span>
-                                <span className="stat-desc">TOTAL CAREER ROLES</span>
-                            </div>
-                        </div>
+                            This Season
+                        </button>
+                        <button
+                            className={`tab ${activeTab === 'allTime' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('allTime')}
+                        >
+                            All-Time Roles
+                        </button>
                     </div>
-                </div>
-            </div>
 
-            <div className="tabs">
-                <button
-                    className={`tab ${activeTab === 'seasonal' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('seasonal')}
-                >
-                    This Season
-                </button>
-                <button
-                    className={`tab ${activeTab === 'allTime' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('allTime')}
-                >
-                    All-Time Roles
-                </button>
-            </div>
-
-            <div className="roles-grid">
-                {(activeTab === 'seasonal' ? seasonalRoles : allTimeRoles).map((role, i) => (
-                    <RoleCard key={i} role={role} />
-                ))}
-                {(activeTab === 'seasonal' ? seasonalRoles : allTimeRoles).length === 0 && (
-                    <div className="empty-state">
-                        <p>No roles found.</p>
+                    <div className="roles-grid">
+                        {(activeTab === 'seasonal' ? seasonalRoles : allTimeRoles).map((role, i) => (
+                            <RoleCard key={i} role={role} />
+                        ))}
+                        {(activeTab === 'seasonal' ? seasonalRoles : allTimeRoles).length === 0 && (
+                            <div className="empty-state">
+                                <p>No roles found.</p>
+                            </div>
+                        )}
                     </div>
-                )}
+                </main>
             </div>
         </div>
     )
