@@ -83,8 +83,20 @@
 
   .header-content {
     flex-direction: column;
+    align-items: center;
+    /* Center all children horizontally */
     gap: 1rem;
     padding: 1rem;
+  }
+
+  .logo {
+    justify-content: center;
+    /* Center logo contents */
+  }
+
+  .logo-icon {
+    display: none;
+    /* Hide emoji on mobile for cleaner centering */
   }
 
   .nav {
