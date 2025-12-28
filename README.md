@@ -17,13 +17,6 @@ Discover voice actors (seiyuu) in the current anime season and explore their rol
 - **MAL Integrated**: Direct links to MyAnimeList for voice actors, anime, and characters.
 - **AI-Powered**: Built with the help of Antigravity AI.
 
-## 📋 Specifications (SpecKit)
-
-See [`.github/specs/`](.github/specs/) for detailed documentation:
-- [**Constitution**](.github/specs/constitution.md) - Project principles & tech choices
-- [**Features**](.github/specs/features.md) - User stories & API spec
-- [**Architecture**](.github/specs/architecture.md) - System design & data flow
-
 ## 🚀 Quick Start (Development)
 
 ```bash
