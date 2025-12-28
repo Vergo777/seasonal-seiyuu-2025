@@ -12,8 +12,8 @@
 }
 
 .season-badge {
-    background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
-    color: white;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+    color: var(--bg-deep);
     padding: 0.5rem 1rem;
     border-radius: 20px;
     font-weight: 600;
@@ -28,7 +28,7 @@
     position: sticky;
     top: 70px;
     z-index: 50;
-    background: linear-gradient(180deg, rgba(15, 15, 26, 1) 0%, rgba(15, 15, 26, 0.95) 100%);
+    background: linear-gradient(180deg, var(--bg-deep) 0%, rgba(15, 23, 42, 0.95) 100%);
     padding: 1rem 0;
     margin-bottom: 1.5rem;
 }
@@ -50,8 +50,8 @@
 }
 
 .search-input:focus {
-    border-color: #e94560;
-    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--accent);
+    background: var(--bg-elevated);
 }
 
 .va-grid {
@@ -77,8 +77,8 @@
 .spinner {
     width: 40px;
     height: 40px;
-    border: 3px solid rgba(255, 255, 255, 0.1);
-    border-top-color: #e94560;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 1rem;

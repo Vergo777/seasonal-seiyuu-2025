@@ -49,8 +49,11 @@
 .compare-vs {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 2rem;
-    color: #d4af37;
-    text-shadow: 0 0 20px #d4af37;
+    background: linear-gradient(135deg, #ff7eb6 0%, #38bdf8 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 5px rgba(255, 126, 182, 0.5));
 }
 
 .search-dropdown {
@@ -251,7 +254,7 @@
 .compare-stat-value {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 2rem;
-    color: #d4af37;
+    color: #38bdf8;
 }
 
 .compare-stat-label {
@@ -272,11 +275,11 @@
 .vs-text {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 4rem;
-    color: #d4af37;
+    color: #ff7eb6;
     text-shadow:
-        0 0 10px #d4af37,
-        0 0 30px rgba(212, 175, 55, 0.5),
-        0 0 60px rgba(212, 175, 55, 0.3);
+        0 0 10px rgba(255, 126, 182, 0.5),
+        0 0 30px rgba(255, 126, 182, 0.3),
+        0 0 60px rgba(56, 189, 248, 0.2);
     animation: vs-pulse 2s ease-in-out infinite;
 }
 

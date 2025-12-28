@@ -8,30 +8,31 @@
 
 :root {
   /* Midnight blue palette */
-  --bg-deep: #0a0e1a;
-  --bg-panel: #101828;
-  --bg-card: #182035;
-  --bg-elevated: #1f2b45;
+  /* Midnight blue palette - slightly cooler */
+  --bg-deep: #0f172a;
+  --bg-panel: #1e293b;
+  --bg-card: #1e293b;
+  --bg-elevated: #334155;
 
-  --text-hero: #f0f4ff;
-  --text-body: #b8c5dc;
-  --text-muted: #6b7a94;
+  --text-hero: #e2e8f0;
+  --text-body: #94a3b8;
+  --text-muted: #64748b;
 
-  /* Accent: Sakura pink - soft and elegant */
-  --accent: #e8a4b8;
-  --accent-glow: rgba(232, 164, 184, 0.2);
-  --accent-soft: #f0c6d2;
+  /* Accent: Neon Sakura Pink */
+  --accent: #ff7eb6;
+  --accent-glow: rgba(255, 126, 182, 0.2);
+  --accent-soft: #f472b6;
 
-  /* Secondary: Soft teal/cyan */
-  --secondary: #7dd3c0;
-  --secondary-muted: #4a9e8f;
+  /* Secondary: Electric Cyan */
+  --secondary: #38bdf8;
+  --secondary-muted: #0ea5e9;
 
-  /* Highlight gold */
-  --gold: #d4af37;
+  /* Removed Gold - replaced with Secondary or White */
+  --gold: #e2e8f0;
 
-  --border: #263354;
-  --radius: 4px;
-  --radius-lg: 8px;
+  --border: #334155;
+  --radius: 8px;
+  --radius-lg: 12px;
 
   /* Subtle noise texture */
   --grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
