@@ -149,7 +149,23 @@
     }
 
     .search-container {
-        top: 0;
-        /* Adjust for stacked header */
+        position: relative;
+        /* Normal flow on mobile - no sticky issues */
+        top: auto;
+        padding: 0.5rem 0;
+        margin-bottom: 1rem;
+    }
+
+    .va-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+}
+
+/* Very narrow screens - single column */
+@media (max-width: 400px) {
+    .va-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
     }
 }

@@ -78,48 +78,6 @@ a:hover {
 }
 
 /* ===== HEADER - Editorial masthead ===== */
-.header {
-  background: var(--bg-panel);
-  border-bottom: 3px solid var(--accent);
-  padding: 0;
-  position: sticky;
-  top: 0;
-  z-index: 100;
-}
-
-.header-content {
-  max-width: 1600px;
-  margin: 0 auto;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.25rem 2rem;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
-}
-
-.header-nav {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.header-nav-link {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  transition: color 0.2s;
-}
-
-.header-nav-link:hover {
-  color: var(--accent);
-}
 
 .github-link {
   display: flex;
@@ -201,31 +159,7 @@ a:hover {
   }
 }
 
-/* ===== SEARCH - Editorial search bar ===== */
-.search-container {
-  margin-bottom: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  position: sticky;
-  top: 90px;
-  background: var(--bg-deep);
-  padding: 1rem 0;
-  z-index: 10;
-  border-bottom: 1px solid var(--border);
-}
-
-/* Add a subtle fade effect when sticky */
-.search-container::after {
-  content: '';
-  position: absolute;
-  bottom: -20px;
-  left: 0;
-  right: 0;
-  height: 20px;
-  background: linear-gradient(to bottom, var(--bg-deep), transparent);
-  pointer-events: none;
-}
+/* ===== SEARCH - Styles moved to HomePage.css ===== */
 
 
 
@@ -642,20 +576,9 @@ a.role-anime-title:hover {
     padding: 1.5rem 1rem;
   }
 
-  .va-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
+  /* va-grid mobile rules moved to HomePage.css */
 
-  .va-grid .va-card:first-child {
-    grid-column: span 2;
-    grid-row: span 1;
-  }
-
-  .search-container {
-    flex-direction: column;
-    align-items: stretch;
-  }
+  /* Search container mobile rules moved to HomePage.css */
 
 
 
