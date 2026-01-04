@@ -1,6 +1,18 @@
-# 🎙️ Seasonal Seiyuu
+# 🎙️ Seasonal Seiyuu - a way to easily track what seasonal anime your favourite voice actors are involved in
 
-Discover voice actors (seiyuu) in the current anime season and explore their roles.
+## The problem statement
+
+Every new season of anime brings with it about 30-40+ new different shows. Most of the main anime tracking websites such as [MyAnimeList](https://myanimelist.net/) now offer a [dedicated seasonal page](https://myanimelist.net/anime/season) to track all these new shows in one place, making it convenient to browse what's coming up.
+
+However, a sizeable number of anime fans choose what to watch in a new season based on the voice cast for the show. Specifically, dedicated fans of certain [seiyuus](https://en.wiktionary.org/wiki/seiyuu) (roughly "voice actor" in Japanese) choose what to watch based on whichever shows their favourite seiyuu is involved in.
+
+As things stand, while it's simple enough to look up the voice cast for a given single anime, no major anime platform provides the ability to do the "reverse" search - finding out what shows in the current season a particular given seiyuu is involved in. This is the problem that **Seasonal Seiyuu** aims to solve.
+
+The live version of the app is normally accessible here: https://www.vergo.moe/seiyuu
+
+## Data source
+
+Seasonal Seiyuu makes use of the incredible [Jikan API](https://docs.jikan.moe/) to fetch all related information from MAL.
 
 ## Tech Stack
 
