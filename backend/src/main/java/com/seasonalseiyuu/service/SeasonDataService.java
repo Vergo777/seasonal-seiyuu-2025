@@ -81,6 +81,19 @@ public class SeasonDataService {
             // Step 1: Fetch all seasonal anime
             SeasonAnimeResult animeResult = jikanApi.getCurrentSeasonAnime();
             List<Anime> seasonalAnime = animeResult.anime();
+
+            // Deduplicate anime by MAL ID (Jikan API sometimes returns duplicates)
+            int originalCount = seasonalAnime.size();
+            Map<Integer, Anime> uniqueAnimeMap = new LinkedHashMap<>();
+            for (Anime anime : seasonalAnime) {
+                uniqueAnimeMap.putIfAbsent(anime.malId(), anime);
+            }
+            seasonalAnime = new ArrayList<>(uniqueAnimeMap.values());
+            if (seasonalAnime.size() < originalCount) {
+                log.warn("Removed {} duplicate anime entries from API response",
+                        originalCount - seasonalAnime.size());
+            }
+
             if (seasonalAnime.isEmpty()) {
                 log.error("No anime found for current season");
                 updateStatus("Error: No anime found", 0, 0);
