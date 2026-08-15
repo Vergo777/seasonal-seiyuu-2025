@@ -122,7 +122,8 @@ After=network.target
 Type=simple
 User=www-data
 WorkingDirectory=/opt/seasonal-seiyuu
-Environment="ADMIN_API_KEY=your-secret-key-here"
+EnvironmentFile=/etc/seasonal-seiyuu.env
+Environment="REFRESH_ENABLED=false"
 ExecStart=/usr/bin/java -jar seasonal-seiyuu-1.0.0.jar
 Restart=always
 RestartSec=10
@@ -145,24 +146,48 @@ sudo journalctl -u seasonal-seiyuu -f
 
 ---
 
-## 🔄 Refreshing Data for a New Season
+## 🔄 Refreshing and operating automatic data refresh
 
 Run this when a new anime season starts (typically Jan/Apr/Jul/Oct):
 
 ```bash
-# Trigger refresh (on VPS)
-curl -X POST -H "X-API-Key: your-secret-key-here" https://vergo.moe/seiyuu/api/admin/refresh
+# Trigger a manual refresh. Supply the protected key from your shell/secret manager.
+curl -X POST -H "X-API-Key: $ADMIN_API_KEY" https://vergo.moe/seiyuu/api/admin/refresh
 
 # Check progress
-curl -H "X-API-Key: your-secret-key-here" https://vergo.moe/seiyuu/api/admin/refresh/status
+curl -H "X-API-Key: $ADMIN_API_KEY" https://vergo.moe/seiyuu/api/admin/refresh/status
 
 # Or locally:
-curl -X POST -H "X-API-Key: changeme" http://localhost:8080/seiyuu/api/admin/refresh
+curl -X POST -H "X-API-Key: $ADMIN_API_KEY" http://localhost:8080/seiyuu/api/admin/refresh
 ```
 
 **Note**: Refresh takes ~10-15 minutes due to API rate limiting.
 
-The refresh is **resumable** - if it fails mid-way, just trigger it again and it picks up where it left off.
+The refresh is **resumable** - if it fails mid-way, trigger it again and it picks up compatible progress. A failed attempt never replaces the last known-good cache.
+
+Automatic scheduling is disabled by default. Enable it only after the rollout below has been validated. The scheduler runs inside the Spring process, uses UTC by default, performs a delayed stale-cache catch-up after startup, and shares the same single-flight entry point as the manual endpoint.
+
+| Setting | Default | Purpose |
+|---------|---------|---------|
+| `REFRESH_ENABLED` | `false` | Enables daily and startup refreshes; manual refresh is always available |
+| `REFRESH_DAILY_CRON` | `0 0 3 * * *` | Spring six-field daily cron expression |
+| `REFRESH_ZONE` | `UTC` | Scheduler time zone |
+| `REFRESH_STARTUP_DELAY` | `15s` | Delay before startup catch-up checks cache freshness |
+| `REFRESH_FRESHNESS_THRESHOLD` | `24h` | Age at which startup catch-up considers the cache stale |
+| `REFRESH_RETRY_MAX_ATTEMPTS` | `5` | Maximum attempts for transient Jikan failures |
+| `REFRESH_RETRY_INITIAL_BACKOFF` | `1s` | Initial transient retry delay |
+| `REFRESH_RETRY_MAX_BACKOFF` | `30s` | Retry delay ceiling |
+| `REFRESH_RETRY_JITTER` | `250ms` | Random delay added to retries |
+| `JIKAN_RATE_LIMIT_MS` | `1000` | Minimum spacing between all Jikan attempts |
+
+### One-time production rollout
+
+1. Deploy with `REFRESH_ENABLED=false` and verify the existing cache loads, the public season-info response remains compatible, and the authenticated status endpoint is reachable.
+2. Trigger one manual refresh. Inspect the status response and logs for staged promotion, a successful `lastSuccess`, the detected active season, and any incomplete-anime count.
+3. Enable `REFRESH_ENABLED=true` in the protected service environment and restart once. Startup catch-up will run only when the cache is missing or older than the freshness threshold; the daily cron handles later reconciliation.
+4. Confirm `GET /seiyuu/api/season-info` reports the expected active season and last-success health, then leave the scheduler enabled.
+
+If an automated run fails, the failure summary and `lastAttempt` are persisted in `data/refresh-health.json`; the active `data/season-cache.json` remains available and `refresh-progress.json` remains for a compatible retry. Use the authenticated manual endpoint as an override. To roll back, set `REFRESH_ENABLED=false` and restart; retain the active cache. A previous application version can ignore newer progress/health files while continuing to read the cache.
 
 ---
 
@@ -181,7 +206,8 @@ Cache files (auto-created in working directory):
 ```
 data/
 ├── season-cache.json      # Current season data (~5-10MB)
-└── refresh-progress.json  # Temporary (deleted after refresh)
+├── refresh-progress.json  # Cumulative resumable checkpoint (deleted after success)
+└── refresh-health.json    # Last attempt/success and sanitized operational state
 ```
 
 ---

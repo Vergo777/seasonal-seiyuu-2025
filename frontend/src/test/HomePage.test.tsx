@@ -13,7 +13,9 @@ vi.mock('../api/client', () => ({
 const mockSeasonInfo = {
     season: 'Summer',
     year: 2025,
-    voiceActorCount: 20
+    voiceActorCount: 20,
+    lastSuccess: '2025-07-15T10:30:00Z',
+    incompleteAnimeCount: 2
 }
 
 const mockVoiceActors = [
@@ -52,6 +54,23 @@ describe('HomePage', () => {
         // Check season badge specific parts
         expect(screen.getByText('☀️')).toBeInTheDocument() // Emoji for Summer
         expect(screen.getByText('20')).toBeInTheDocument() // Count
+        expect(screen.getByText(/Last successful refresh:/)).toBeInTheDocument()
+        expect(screen.getByText(/Cast data refreshes automatically/)).toBeInTheDocument()
+        expect(screen.getByText(/2 titles still have cast data filling in/)).toBeInTheDocument()
+    })
+
+    it('omits freshness timestamp when metadata is unavailable', async () => {
+        (fetchVoiceActors as any).mockResolvedValue(mockVoiceActors);
+        (fetchSeasonInfo as any).mockResolvedValue({
+            season: 'Summer', year: 2025, voiceActorCount: 20,
+            lastSuccess: null, lastRefreshed: null
+        })
+
+        render(<HomePage />)
+
+        await waitFor(() => expect(screen.getByText('SUMMER 2025')).toBeInTheDocument())
+        expect(screen.queryByText(/Last successful refresh:/)).not.toBeInTheDocument()
+        expect(screen.getByText(/Cast data refreshes automatically/)).toBeInTheDocument()
     })
 
     it('filters voice actors by search query', async () => {

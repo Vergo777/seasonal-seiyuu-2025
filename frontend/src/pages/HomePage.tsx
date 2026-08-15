@@ -51,15 +51,6 @@ function HomePage() {
         )
     }
 
-    if (voiceActors.length === 0) {
-        return (
-            <div className="empty-state">
-                <h2>No Data Available</h2>
-                <p>Please trigger a data refresh from the admin panel.</p>
-            </div>
-        )
-    }
-
     const getSeasonEmoji = (season: string) => {
         const s = season.toLowerCase()
         if (s.includes('spring')) return '🌸'
@@ -68,6 +59,14 @@ function HomePage() {
         if (s.includes('winter')) return '❄️'
         return '📅'
     }
+
+    const successfulRefresh = seasonInfo?.lastSuccess ?? seasonInfo?.lastRefreshed
+    const formattedRefresh = successfulRefresh
+        ? new Date(successfulRefresh).toLocaleString(undefined, {
+            dateStyle: 'medium',
+            timeStyle: 'short'
+        })
+        : null
 
     return (
         <div className="home-page">
@@ -84,37 +83,61 @@ function HomePage() {
                             <span className="count-label">ACTORS</span>
                         </span>
                     </div>
+                    <div className="season-freshness" aria-live="polite">
+                        {formattedRefresh && (
+                            <span className="last-successful-refresh">
+                                Last successful refresh: {formattedRefresh}
+                            </span>
+                        )}
+                        <span className="refresh-explanation">
+                            Cast data refreshes automatically and can fill in as the season progresses.
+                        </span>
+                        {!!seasonInfo.incompleteAnimeCount && seasonInfo.incompleteAnimeCount > 0 && (
+                            <span className="incomplete-explanation">
+                                {seasonInfo.incompleteAnimeCount} title{seasonInfo.incompleteAnimeCount === 1 ? '' : 's'} still have cast data filling in.
+                            </span>
+                        )}
+                    </div>
                 </div>
             )}
 
-            <div className="search-container">
-                <input
-                    type="text"
-                    className="search-input"
-                    placeholder="🔍 Search voice actors..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                />
-            </div>
-
-            <div className="va-grid">
-                {filteredVAs.map(va => (
-                    <a
-                        key={va.malId}
-                        href={`/seiyuu/va/${va.malId}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="va-card-link"
-                    >
-                        <VoiceActorCard voiceActor={va} />
-                    </a>
-                ))}
-            </div>
-
-            {filteredVAs.length === 0 && searchQuery && (
-                <div className="no-results">
-                    <p>No voice actors found matching "{searchQuery}"</p>
+            {voiceActors.length === 0 ? (
+                <div className="empty-state">
+                    <h2>No Data Available</h2>
+                    <p>Please trigger a data refresh from the admin panel.</p>
                 </div>
+            ) : (
+                <>
+                    <div className="search-container">
+                        <input
+                            type="text"
+                            className="search-input"
+                            placeholder="🔍 Search voice actors..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+
+                    <div className="va-grid">
+                        {filteredVAs.map(va => (
+                            <a
+                                key={va.malId}
+                                href={`/seiyuu/va/${va.malId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="va-card-link"
+                            >
+                                <VoiceActorCard voiceActor={va} />
+                            </a>
+                        ))}
+                    </div>
+
+                    {filteredVAs.length === 0 && searchQuery && (
+                        <div className="no-results">
+                            <p>No voice actors found matching "{searchQuery}"</p>
+                        </div>
+                    )}
+                </>
             )}
         </div>
     )

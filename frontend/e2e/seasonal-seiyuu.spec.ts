@@ -31,12 +31,16 @@ test('home page loads seasonal actors and filters by name', async ({ page }) => 
         season: 'winter',
         year: 2026,
         lastRefreshed: null,
+        lastSuccess: '2026-01-15T10:30:00Z',
+        incompleteAnimeCount: 1,
         voiceActorCount: 2
     }))
 
     await page.goto('./')
 
     await expect(page.getByText('WINTER 2026')).toBeVisible()
+    await expect(page.getByText(/Last successful refresh:/)).toBeVisible()
+    await expect(page.getByText(/Cast data refreshes automatically/)).toBeVisible()
     await expect(page.getByText('Aoi Test')).toBeVisible()
     await expect(page.getByText('Mika Test')).toBeVisible()
 

@@ -131,6 +131,15 @@ class VoiceActorControllerTest {
                                 Instant.parse("2025-01-15T10:30:00Z"), Map.of(1, va));
 
                 when(seasonDataService.getSeasonData()).thenReturn(Optional.of(cache));
+                when(seasonDataService.getRefreshHealth()).thenReturn(new RefreshHealth(
+                                Instant.parse("2025-01-15T10:30:00Z"),
+                                Instant.parse("2025-01-15T10:30:00Z"), "success", "Published",
+                                "fall", 2025, "fall", 2025, 1));
+                when(seasonDataService.getRefreshStatus()).thenReturn(new SeasonDataService.RefreshStatus(
+                                false, "Complete", 100, 100,
+                                Instant.parse("2025-01-15T10:30:00Z"), Instant.parse("2025-01-15T10:30:00Z"),
+                                "success", "fall", 2025, "fall", 2025, 1, "COMPLETE",
+                                1, 1, 1, 1));
 
                 // When & Then
                 mockMvc.perform(get("/api/season-info"))
@@ -138,7 +147,11 @@ class VoiceActorControllerTest {
                                 .andExpect(jsonPath("$.season", is("fall")))
                                 .andExpect(jsonPath("$.year", is(2025)))
                                 .andExpect(jsonPath("$.voiceActorCount", is(1)))
-                                .andExpect(jsonPath("$.lastRefreshed", containsString("2025-01-15")));
+                                .andExpect(jsonPath("$.lastRefreshed", containsString("2025-01-15")))
+                                .andExpect(jsonPath("$.lastSuccess", containsString("2025-01-15")))
+                                .andExpect(jsonPath("$.refreshOutcome", is("success")))
+                                .andExpect(jsonPath("$.incompleteAnimeCount", is(1)))
+                                .andExpect(jsonPath("$.refreshInProgress", is(false)));
         }
 
         @Test

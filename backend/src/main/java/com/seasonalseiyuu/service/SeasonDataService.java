@@ -1,10 +1,12 @@
 package com.seasonalseiyuu.service;
 
+import com.seasonalseiyuu.config.RefreshProperties;
 import com.seasonalseiyuu.model.*;
 import com.seasonalseiyuu.service.JikanApiService.CharacterVoiceActor;
 import com.seasonalseiyuu.service.JikanApiService.SeasonAnimeResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -12,229 +14,351 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * Service for managing season data - coordinates fetching, caching, and
- * refresh.
- */
+/** Coordinates one-flight, resumable refreshes and publication of snapshots. */
 @Service
 public class SeasonDataService {
-
     private static final Logger log = LoggerFactory.getLogger(SeasonDataService.class);
 
     private final JikanApiService jikanApi;
     private final CacheService cacheService;
-
+    private final RefreshProperties refreshProperties;
     private final AtomicBoolean refreshInProgress = new AtomicBoolean(false);
-    private final AtomicReference<RefreshStatus> currentStatus = new AtomicReference<>(
-            new RefreshStatus(false, "", 0, 0));
+    private final AtomicReference<RefreshStatus> currentStatus = new AtomicReference<>(RefreshStatus.idle());
+    private final AtomicReference<RefreshHealth> currentHealth = new AtomicReference<>(RefreshHealth.empty());
 
-    public SeasonDataService(JikanApiService jikanApi, CacheService cacheService) {
+    @Autowired
+    public SeasonDataService(JikanApiService jikanApi, CacheService cacheService,
+                             RefreshProperties refreshProperties) {
         this.jikanApi = jikanApi;
         this.cacheService = cacheService;
+        this.refreshProperties = refreshProperties;
     }
 
-    /**
-     * Gets all voice actors from cache.
-     */
-    public Optional<SeasonCache> getSeasonData() {
-        return cacheService.loadCache();
+    /** Compatibility constructor for focused unit tests. */
+    public SeasonDataService(JikanApiService jikanApi, CacheService cacheService) {
+        this(jikanApi, cacheService, new RefreshProperties());
     }
 
-    /**
-     * Gets a specific voice actor by ID.
-     */
+    public Optional<SeasonCache> getSeasonData() { return cacheService.loadCache(); }
+
     public Optional<VoiceActor> getVoiceActor(int malId) {
-        return cacheService.loadCache()
-                .map(cache -> cache.voiceActors().get(malId));
+        return cacheService.loadCache().map(cache -> cache.voiceActors().get(malId));
     }
 
-    /**
-     * Gets current refresh status.
-     */
     public RefreshStatus getRefreshStatus() {
-        return currentStatus.get();
+        RefreshStatus status = currentStatus.get();
+        RefreshHealth health = currentHealth();
+        return status.withHealth(health);
     }
 
-    /**
-     * Starts or resumes a data refresh.
-     * 
-     * @return true if refresh started, false if already in progress
-     */
+    public RefreshHealth getRefreshHealth() { return currentHealth(); }
+
     public boolean startRefresh() {
         if (!refreshInProgress.compareAndSet(false, true)) {
-            log.warn("Refresh already in progress");
+            log.warn("Refresh already in progress; trigger skipped");
             return false;
         }
-
         Thread.startVirtualThread(this::executeRefresh);
         return true;
     }
 
+    /** Synchronous entry point useful to scheduler tests and operational tooling. */
+    public boolean refreshNow() {
+        if (!refreshInProgress.compareAndSet(false, true)) return false;
+        executeRefresh();
+        return true;
+    }
+
+    public boolean isCacheStale() {
+        return cacheService.loadCache()
+                .map(cache -> cache.lastRefreshed() == null
+                        || cache.lastRefreshed().plus(refreshProperties.getFreshnessThreshold()).isBefore(Instant.now()))
+                .orElse(true);
+    }
+
     private void executeRefresh() {
+        Instant attempt = Instant.now();
+        Optional<SeasonCache> activeBefore = cacheService.loadCache();
+        String activeSeason = activeBefore.map(SeasonCache::season).orElse(null);
+        Integer activeYear = activeBefore.map(SeasonCache::year).orElse(null);
+        String candidateSeason = null;
+        Integer candidateYear = null;
+        Accumulator accumulator = null;
+
+        setHealth(new RefreshHealth(attempt, currentHealth().lastSuccess(), "running", "Refresh started",
+                activeSeason, activeYear, null, null, currentHealth().incompleteAnimeCount()));
+        updateStatus("Fetching seasonal anime...", 0, 0, null);
         try {
-            log.info("Starting data refresh");
-            updateStatus("Fetching seasonal anime...", 0, 100);
-
-            // Check for existing progress
-            Optional<RefreshProgress> existingProgress = cacheService.loadProgress();
-
-            // Step 1: Fetch all seasonal anime
             SeasonAnimeResult animeResult = jikanApi.getCurrentSeasonAnime();
-            List<Anime> seasonalAnime = animeResult.anime();
-
-            // Deduplicate anime by MAL ID (Jikan API sometimes returns duplicates)
-            int originalCount = seasonalAnime.size();
-            Map<Integer, Anime> uniqueAnimeMap = new LinkedHashMap<>();
-            for (Anime anime : seasonalAnime) {
-                uniqueAnimeMap.putIfAbsent(anime.malId(), anime);
-            }
-            seasonalAnime = new ArrayList<>(uniqueAnimeMap.values());
-            if (seasonalAnime.size() < originalCount) {
-                log.warn("Removed {} duplicate anime entries from API response",
-                        originalCount - seasonalAnime.size());
+            if (!animeResult.isComplete() || animeResult.anime().isEmpty()) {
+                throw new RefreshFailure("Season pagination was incomplete");
             }
 
-            if (seasonalAnime.isEmpty()) {
-                log.error("No anime found for current season");
-                updateStatus("Error: No anime found", 0, 0);
-                return;
-            }
+            List<Anime> seasonalAnime = deduplicate(animeResult.anime());
+            Anime first = seasonalAnime.get(0);
+            candidateSeason = first.season();
+            candidateYear = first.year();
+            validateSeasonIdentity(seasonalAnime, candidateSeason, candidateYear);
+            setHealth(new RefreshHealth(attempt, currentHealth().lastSuccess(), "running", "Processing candidate season",
+                    activeSeason, activeYear, candidateSeason, candidateYear, 0));
 
-            // Validation check #1: Anime count matches expected
-            if (!animeResult.isComplete()) {
-                log.warn("VALIDATION WARNING: Fetched {} anime but API reports {} expected",
-                        seasonalAnime.size(), animeResult.expectedTotal());
+            Optional<RefreshProgress> saved = cacheService.loadProgress();
+            if (saved.isPresent() && saved.get().isCompatibleWith(candidateSeason, candidateYear)) {
+                accumulator = Accumulator.resume(saved.get(), seasonalAnime, candidateSeason, candidateYear);
+                log.info("Resuming compatible refresh progress for {} {}", candidateSeason, candidateYear);
             } else {
-                log.info("VALIDATION PASSED: Anime count matches expected ({})", animeResult.expectedTotal());
+                if (saved.isPresent()) cacheService.deleteProgress();
+                accumulator = Accumulator.start(seasonalAnime, candidateSeason, candidateYear);
             }
+            accumulator.totalAnime = seasonalAnime.size();
+            checkpoint(accumulator, RefreshProgress.RefreshPhase.FETCHING_CHARACTERS);
 
-            String season = seasonalAnime.get(0).season();
-            int year = seasonalAnime.get(0).year();
-            log.info("Processing {} {} season with {} anime", season, year, seasonalAnime.size());
-
-            // Determine which anime to process (skip already processed if resuming)
-            Set<Integer> processedAnimeIds = existingProgress
-                    .map(RefreshProgress::fetchedAnimeIds)
-                    .orElse(Set.of());
-            Set<Integer> processedVaIds = existingProgress
-                    .map(RefreshProgress::fetchedVoiceActorIds)
-                    .orElse(Set.of());
-            Map<Integer, VoiceActor> voiceActorMap = new HashMap<>(existingProgress
-                    .map(RefreshProgress::partialVoiceActors)
-                    .orElse(Map.of()));
-
-            // Build a map of anime by ID for easy lookup
-            Map<Integer, Anime> animeById = new HashMap<>();
+            Map<Integer, Anime> animeById = new LinkedHashMap<>();
+            seasonalAnime.forEach(anime -> animeById.put(anime.malId(), anime));
             for (Anime anime : seasonalAnime) {
-                animeById.put(anime.malId(), anime);
-            }
+                boolean previouslyIncomplete = accumulator.incompleteAnimeIds.contains(anime.malId());
+                if (accumulator.fetchedAnimeIds.contains(anime.malId()) && !previouslyIncomplete) continue;
 
-            // Step 2: Fetch characters for each anime
-            int processed = processedAnimeIds.size();
-            int total = seasonalAnime.size();
-
-            // Collect VA seasonal roles
-            Map<Integer, List<Role>> vaSeasonalRoles = new HashMap<>();
-            Map<Integer, String> vaNames = new HashMap<>();
-            Map<Integer, String> vaImages = new HashMap<>();
-
-            for (Anime anime : seasonalAnime) {
-                if (processedAnimeIds.contains(anime.malId())) {
-                    continue; // Skip already processed
-                }
-
-                processed++;
-                updateStatus("Fetching characters: " + anime.title(),
-                        (int) ((processed / (double) total) * 50), 100);
-
+                updateStatus("Fetching characters: " + safeTitle(anime.title()),
+                        accumulator.fetchedAnimeIds.size(), seasonalAnime.size(), accumulator);
                 List<CharacterVoiceActor> characters = jikanApi.getAnimeCharacters(anime.malId());
-
-                // Validation check #2: Track anime with zero characters
+                removeRolesForAnime(accumulator.seasonalRoles, anime.malId());
                 if (characters.isEmpty()) {
-                    log.warn("VALIDATION WARNING: Anime '{}' (ID: {}) returned 0 characters",
-                            anime.title(), anime.malId());
+                    accumulator.incompleteAnimeIds.add(anime.malId());
+                } else {
+                    accumulator.incompleteAnimeIds.remove(anime.malId());
+                    for (CharacterVoiceActor cva : characters) {
+                        if (cva.voiceActorMalId() <= 0) continue;
+                        accumulator.voiceActorInputs.putIfAbsent(cva.voiceActorMalId(),
+                                new VoiceActorInput(cva.voiceActorName(), cva.voiceActorImageUrl()));
+                        accumulator.seasonalRoles.computeIfAbsent(cva.voiceActorMalId(), ignored -> new ArrayList<>())
+                                .add(new Role(anime, cva.character()));
+                    }
                 }
-
+                accumulator.fetchedAnimeIds.add(anime.malId());
+                // New/rechecked roles can change a VA's seasonal data; require its career request again.
                 for (CharacterVoiceActor cva : characters) {
-                    int vaId = cva.voiceActorMalId();
-                    vaNames.putIfAbsent(vaId, cva.voiceActorName());
-                    vaImages.putIfAbsent(vaId, cva.voiceActorImageUrl());
-
-                    vaSeasonalRoles.computeIfAbsent(vaId, k -> new ArrayList<>())
-                            .add(new Role(anime, cva.character()));
+                    accumulator.fetchedVoiceActorIds.remove(cva.voiceActorMalId());
+                    accumulator.partialVoiceActors.remove(cva.voiceActorMalId());
                 }
-
-                // Save progress after each anime
-                Set<Integer> newProcessedAnime = new HashSet<>(processedAnimeIds);
-                newProcessedAnime.add(anime.malId());
-
-                cacheService.saveProgress(new RefreshProgress(
-                        season, year,
-                        newProcessedAnime, processedVaIds,
-                        voiceActorMap,
-                        RefreshProgress.RefreshPhase.FETCHING_CHARACTERS,
-                        total, vaSeasonalRoles.size()));
+                checkpoint(accumulator, RefreshProgress.RefreshPhase.FETCHING_CHARACTERS);
             }
 
-            // Step 3: Fetch all-time roles for each voice actor
-            List<Integer> vaIds = new ArrayList<>(vaSeasonalRoles.keySet());
-            int vaProcessed = 0;
-            int vaTotal = vaIds.size();
-
-            for (int vaId : vaIds) {
-                if (processedVaIds.contains(vaId)) {
-                    vaProcessed++;
-                    continue;
-                }
-
-                vaProcessed++;
-                String vaName = vaNames.getOrDefault(vaId, "Unknown");
-                updateStatus("Fetching VA roles: " + vaName,
-                        50 + (int) ((vaProcessed / (double) vaTotal) * 50), 100);
-
+            Set<Integer> requiredVoiceActors = new TreeSet<>(accumulator.seasonalRoles.keySet());
+            accumulator.totalVoiceActors = requiredVoiceActors.size();
+            checkpoint(accumulator, RefreshProgress.RefreshPhase.FETCHING_VA_ROLES);
+            int vaIndex = 0;
+            for (int vaId : requiredVoiceActors) {
+                vaIndex++;
+                if (accumulator.fetchedVoiceActorIds.contains(vaId)
+                        && accumulator.partialVoiceActors.containsKey(vaId)) continue;
+                VoiceActorInput input = accumulator.voiceActorInputs.getOrDefault(vaId, new VoiceActorInput("Unknown", ""));
+                updateStatus("Fetching VA roles: " + safeTitle(input.name()), vaIndex, requiredVoiceActors.size(), accumulator);
                 List<Role> allTimeRoles = jikanApi.getPersonVoiceRoles(vaId);
-                List<Role> seasonalRoles = vaSeasonalRoles.get(vaId);
-
-                VoiceActor va = VoiceActor.create(
-                        vaId,
-                        vaName,
-                        vaImages.getOrDefault(vaId, ""),
-                        seasonalRoles,
-                        allTimeRoles);
-                voiceActorMap.put(vaId, va);
-
-                // Save progress after each VA
-                Set<Integer> newProcessedVaIds = new HashSet<>(processedVaIds);
-                newProcessedVaIds.add(vaId);
-
-                cacheService.saveProgress(new RefreshProgress(
-                        season, year,
-                        Set.copyOf(animeById.keySet()), newProcessedVaIds,
-                        voiceActorMap,
-                        RefreshProgress.RefreshPhase.FETCHING_VA_ROLES,
-                        total, vaTotal));
+                VoiceActor actor = VoiceActor.create(vaId, input.name(), input.imageUrl(),
+                        List.copyOf(accumulator.seasonalRoles.getOrDefault(vaId, List.of())), allTimeRoles);
+                accumulator.partialVoiceActors.put(vaId, actor);
+                accumulator.fetchedVoiceActorIds.add(vaId);
+                checkpoint(accumulator, RefreshProgress.RefreshPhase.FETCHING_VA_ROLES);
             }
 
-            // Step 4: Save final cache
-            SeasonCache cache = new SeasonCache(season, year, Instant.now(), voiceActorMap);
-            cacheService.saveCache(cache);
+            SeasonCache candidate = new SeasonCache(candidateSeason, candidateYear, Instant.now(),
+                    completeActorMap(accumulator, requiredVoiceActors));
+            validateCandidate(candidate, seasonalAnime, accumulator, requiredVoiceActors);
+            cacheService.saveCache(candidate);
             cacheService.deleteProgress();
 
-            updateStatus("Complete", 100, 100);
-            log.info("Refresh complete: {} voice actors cached", voiceActorMap.size());
-
+            Instant success = Instant.now();
+            setHealth(new RefreshHealth(attempt, success, "success",
+                    "Published " + candidate.voiceActors().size() + " voice actors",
+                    candidate.season(), candidate.year(), candidate.season(), candidate.year(),
+                    accumulator.incompleteAnimeIds.size()));
+            updateStatus("Complete", 100, 100, accumulator);
+            log.info("Refresh complete: {} voice actors cached; {} incomplete anime",
+                    candidate.voiceActors().size(), accumulator.incompleteAnimeIds.size());
         } catch (Exception e) {
-            log.error("Refresh failed", e);
-            updateStatus("Error: " + e.getMessage(), 0, 0);
+            String summary = sanitizeSummary(e);
+            log.warn("Refresh failed: {}", summary);
+            setHealth(new RefreshHealth(attempt, currentHealth().lastSuccess(), "failed", summary,
+                    activeSeason, activeYear, candidateSeason, candidateYear,
+                    accumulator == null ? currentHealth().incompleteAnimeCount() : accumulator.incompleteAnimeIds.size()));
+            updateStatus("Error: " + summary, 0, 0, accumulator);
         } finally {
             refreshInProgress.set(false);
+            currentStatus.updateAndGet(status -> status.withInProgress(false));
         }
     }
 
-    private void updateStatus(String message, int current, int total) {
-        currentStatus.set(new RefreshStatus(refreshInProgress.get(), message, current, total));
+    private Map<Integer, VoiceActor> completeActorMap(Accumulator accumulator, Set<Integer> required) {
+        Map<Integer, VoiceActor> result = new LinkedHashMap<>();
+        required.forEach(id -> {
+            VoiceActor actor = accumulator.partialVoiceActors.get(id);
+            if (actor != null) result.put(id, actor);
+        });
+        return result;
     }
 
-    public record RefreshStatus(boolean inProgress, String message, int current, int total) {
+    private void checkpoint(Accumulator accumulator, RefreshProgress.RefreshPhase phase) {
+        accumulator.phase = phase;
+        if (!cacheService.saveProgress(accumulator.toProgress())) {
+            throw new RefreshFailure("Unable to checkpoint refresh progress");
+        }
+    }
+
+    private void validateCandidate(SeasonCache candidate, List<Anime> seasonalAnime,
+                                   Accumulator accumulator, Set<Integer> requiredVoiceActors) {
+        Set<Integer> animeIds = seasonalAnime.stream().map(Anime::malId).collect(java.util.stream.Collectors.toSet());
+        if (!accumulator.fetchedAnimeIds.containsAll(animeIds)) {
+            throw new RefreshFailure("Candidate is missing seasonal anime responses");
+        }
+        if (!accumulator.fetchedVoiceActorIds.containsAll(requiredVoiceActors)
+                || candidate.voiceActors().size() != requiredVoiceActors.size()) {
+            throw new RefreshFailure("Candidate is missing voice-actor role responses");
+        }
+        for (Map.Entry<Integer, List<Role>> entry : accumulator.seasonalRoles.entrySet()) {
+            VoiceActor actor = candidate.voiceActors().get(entry.getKey());
+            if (actor == null || actor.seasonalRoles().size() != entry.getValue().size()
+                    || actor.totalSeasonalShows() != (int) entry.getValue().stream()
+                    .map(role -> role.anime().malId()).distinct().count()) {
+                throw new RefreshFailure("Candidate voice-actor records are inconsistent");
+            }
+            for (Role role : entry.getValue()) {
+                if (!animeIds.contains(role.anime().malId())
+                        || !candidate.season().equalsIgnoreCase(role.anime().season())
+                        || candidate.year() != role.anime().year()) {
+                    throw new RefreshFailure("Candidate contains a role outside the season");
+                }
+            }
+        }
+    }
+
+    private void validateSeasonIdentity(List<Anime> anime, String season, int year) {
+        if (season == null || season.isBlank() || year <= 0) {
+            throw new RefreshFailure("Season response has no usable season identity");
+        }
+        if (anime.stream().anyMatch(item -> !season.equalsIgnoreCase(item.season()) || year != item.year())) {
+            throw new RefreshFailure("Season response contains inconsistent season metadata");
+        }
+    }
+
+    private List<Anime> deduplicate(List<Anime> anime) {
+        Map<Integer, Anime> unique = new LinkedHashMap<>();
+        anime.forEach(item -> unique.putIfAbsent(item.malId(), item));
+        return List.copyOf(unique.values());
+    }
+
+    private void removeRolesForAnime(Map<Integer, List<Role>> roles, int animeId) {
+        roles.values().forEach(list -> list.removeIf(role -> role.anime().malId() == animeId));
+        roles.values().removeIf(List::isEmpty);
+    }
+
+    private void updateStatus(String message, int current, int total, Accumulator accumulator) {
+        RefreshHealth health = currentHealth();
+        currentStatus.set(new RefreshStatus(true, message, current, total,
+                health.lastAttempt(), health.lastSuccess(), health.outcome(),
+                health.activeSeason(), health.activeYear(), health.candidateSeason(), health.candidateYear(),
+                health.incompleteAnimeCount(), accumulator == null ? null : accumulator.phase.name(),
+                accumulator == null ? 0 : accumulator.fetchedAnimeIds.size(),
+                accumulator == null ? 0 : accumulator.totalAnime,
+                accumulator == null ? 0 : accumulator.fetchedVoiceActorIds.size(),
+                accumulator == null ? 0 : accumulator.totalVoiceActors));
+    }
+
+    private void setHealth(RefreshHealth health) {
+        currentHealth.set(health);
+        cacheService.saveRefreshHealth(health);
+    }
+
+    private RefreshHealth currentHealth() {
+        RefreshHealth memory = currentHealth.get();
+        if (memory.outcome().equals("never_run")) {
+            return cacheService.loadRefreshHealth().orElse(memory);
+        }
+        return memory;
+    }
+
+    private String sanitizeSummary(Throwable throwable) {
+        String message = throwable.getMessage();
+        if (message == null || message.isBlank()) message = throwable.getClass().getSimpleName();
+        String sanitized = message.replaceAll("[\\r\\n\\t]", " ")
+                .replaceAll("(?i)(x-api-key|authorization|cookie)\\s*[:=]\\s*\\S+", "$1=[redacted]");
+        return sanitized.substring(0, Math.min(240, sanitized.length()));
+    }
+
+    private String safeTitle(String value) { return value == null ? "unknown" : value.replaceAll("[\\r\\n]", " "); }
+
+    private static class Accumulator {
+        String season;
+        int year;
+        int totalAnime;
+        int totalVoiceActors;
+        RefreshProgress.RefreshPhase phase;
+        final Set<Integer> fetchedAnimeIds = new LinkedHashSet<>();
+        final Set<Integer> fetchedVoiceActorIds = new LinkedHashSet<>();
+        final Map<Integer, List<Role>> seasonalRoles = new LinkedHashMap<>();
+        final Map<Integer, VoiceActorInput> voiceActorInputs = new LinkedHashMap<>();
+        final Map<Integer, VoiceActor> partialVoiceActors = new LinkedHashMap<>();
+        final Set<Integer> incompleteAnimeIds = new LinkedHashSet<>();
+
+        static Accumulator start(List<Anime> anime, String season, int year) {
+            Accumulator result = new Accumulator();
+            result.season = season; result.year = year; result.totalAnime = anime.size();
+            result.phase = RefreshProgress.RefreshPhase.FETCHING_ANIME;
+            return result;
+        }
+
+        static Accumulator resume(RefreshProgress progress, List<Anime> anime, String season, int year) {
+            Accumulator result = start(anime, season, year);
+            result.fetchedAnimeIds.addAll(progress.fetchedAnimeIds());
+            result.fetchedVoiceActorIds.addAll(progress.fetchedVoiceActorIds());
+            progress.seasonalRoles().forEach((id, roles) -> result.seasonalRoles.put(id, new ArrayList<>(roles)));
+            result.voiceActorInputs.putAll(progress.voiceActorInputs());
+            result.partialVoiceActors.putAll(progress.partialVoiceActors());
+            result.incompleteAnimeIds.addAll(progress.incompleteAnimeIds());
+            result.phase = progress.currentPhase();
+            result.totalAnime = progress.totalAnime() > 0 ? progress.totalAnime() : anime.size();
+            result.totalVoiceActors = progress.totalVoiceActors();
+            return result;
+        }
+
+        RefreshProgress toProgress() {
+            Map<Integer, List<Role>> roleCopy = new LinkedHashMap<>();
+            seasonalRoles.forEach((id, roles) -> roleCopy.put(id, List.copyOf(roles)));
+            return new RefreshProgress(RefreshProgress.CURRENT_FORMAT_VERSION, season, year,
+                    fetchedAnimeIds, fetchedVoiceActorIds, roleCopy, voiceActorInputs,
+                    partialVoiceActors, incompleteAnimeIds, phase, totalAnime, totalVoiceActors);
+        }
+    }
+
+    private static class RefreshFailure extends RuntimeException {
+        RefreshFailure(String message) { super(message); }
+    }
+
+    public record RefreshStatus(
+            boolean inProgress, String message, int current, int total,
+            Instant lastAttempt, Instant lastSuccess, String outcome,
+            String activeSeason, Integer activeYear, String candidateSeason, Integer candidateYear,
+            int incompleteAnimeCount, String phase,
+            int completedAnime, int totalAnime, int completedVoiceActors, int totalVoiceActors) {
+        public RefreshStatus(boolean inProgress, String message, int current, int total) {
+            this(inProgress, message, current, total, null, null, "never_run",
+                    null, null, null, null, 0, null, 0, 0, 0, 0);
+        }
+
+        static RefreshStatus idle() { return new RefreshStatus(false, "Idle", 0, 0); }
+
+        RefreshStatus withHealth(RefreshHealth health) {
+            return new RefreshStatus(inProgress, message, current, total,
+                    health.lastAttempt(), health.lastSuccess(), health.outcome(), health.activeSeason(),
+                    health.activeYear(), health.candidateSeason(), health.candidateYear(),
+                    health.incompleteAnimeCount(), phase, completedAnime, totalAnime,
+                    completedVoiceActors, totalVoiceActors);
+        }
+
+        RefreshStatus withInProgress(boolean value) {
+            return new RefreshStatus(value, message, current, total, lastAttempt, lastSuccess, outcome,
+                    activeSeason, activeYear, candidateSeason, candidateYear, incompleteAnimeCount, phase,
+                    completedAnime, totalAnime, completedVoiceActors, totalVoiceActors);
+        }
     }
 }

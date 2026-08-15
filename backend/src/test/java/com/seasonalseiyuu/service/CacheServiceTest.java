@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
@@ -144,6 +145,49 @@ class CacheServiceTest {
 
         // Then
         assertThat(loaded).isEmpty();
+    }
+
+    @Test
+    void unsupportedProgressVersionIsDiscarded() throws IOException {
+        Files.writeString(tempDir.resolve("refresh-progress.json"),
+                "{\"formatVersion\":999,\"season\":\"fall\",\"year\":2025}");
+
+        assertThat(cacheService.loadProgress()).isEmpty();
+        assertThat(tempDir.resolve("refresh-progress.json")).doesNotExist();
+    }
+
+    @Test
+    void refreshHealth_roundTripsAndIsAbsentByDefault() {
+        assertThat(cacheService.loadRefreshHealth()).isEmpty();
+
+        RefreshHealth health = new RefreshHealth(Instant.parse("2026-01-01T00:00:00Z"),
+                Instant.parse("2026-01-01T00:01:00Z"), "failed", "upstream unavailable X-API-Key=secret",
+                "fall", 2025, "winter", 2026, 2);
+        assertThat(cacheService.saveRefreshHealth(health)).isTrue();
+
+        assertThat(cacheService.loadRefreshHealth()).isPresent();
+        assertThat(cacheService.loadRefreshHealth().orElseThrow().summary()).doesNotContain("secret");
+        assertThat(tempDir.resolve("refresh-health.json")).exists();
+    }
+
+    @Test
+    void failedCandidateValidationDoesNotReplaceLastKnownGoodCache() throws IOException {
+        SeasonCache original = createTestCache();
+        cacheService.saveCache(original);
+        String onDisk = Files.readString(tempDir.resolve("season-cache.json"));
+
+        // A directory at the target path makes promotion fail after staging.
+        Files.delete(tempDir.resolve("season-cache.json"));
+        Files.createDirectory(tempDir.resolve("season-cache.json"));
+        try {
+            org.junit.jupiter.api.Assertions.assertThrows(CacheService.CachePersistenceException.class,
+                    () -> cacheService.saveCache(new SeasonCache("winter", 2026, Instant.now(), Map.of())));
+        } finally {
+            Files.deleteIfExists(tempDir.resolve("season-cache.json"));
+        }
+
+        assertThat(onDisk).contains("fall");
+        assertThat(cacheService.loadCache()).contains(original);
     }
 
     @Test

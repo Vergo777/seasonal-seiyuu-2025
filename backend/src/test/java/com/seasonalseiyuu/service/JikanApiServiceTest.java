@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -141,15 +142,12 @@ class JikanApiServiceTest {
     }
 
     @Test
-    void getAnimeCharacters_returnsEmptyListOnError() {
+    void getAnimeCharacters_throwsOnErrorInsteadOfReturningSuccessfulEmptyData() {
         // Given - Server returns error
         mockWebServer.enqueue(new MockResponse().setResponseCode(500));
 
-        // When
-        List<CharacterVoiceActor> results = jikanApiService.getAnimeCharacters(12345);
-
-        // Then
-        assertTrue(results.isEmpty());
+        assertThrows(JikanApiService.JikanApiException.class,
+                () -> jikanApiService.getAnimeCharacters(12345));
     }
 
     @Test
@@ -174,15 +172,12 @@ class JikanApiServiceTest {
     }
 
     @Test
-    void getPersonVoiceRoles_returnsEmptyListOnError() {
+    void getPersonVoiceRoles_throwsOnErrorInsteadOfReturningSuccessfulEmptyData() {
         // Given
         mockWebServer.enqueue(new MockResponse().setResponseCode(404));
 
-        // When
-        List<Role> roles = jikanApiService.getPersonVoiceRoles(9999);
-
-        // Then
-        assertTrue(roles.isEmpty());
+        assertThrows(JikanApiService.JikanApiException.class,
+                () -> jikanApiService.getPersonVoiceRoles(9999));
     }
 
     @Test
@@ -199,6 +194,98 @@ class JikanApiServiceTest {
         // Then
         assertEquals(3, roles.size(), "Should succeed after retry");
         assertEquals(2, mockWebServer.getRequestCount(), "Should have made 2 requests");
+    }
+
+    @Test
+    void fetchWithRetry_retriesOnServerError() throws IOException {
+        mockWebServer.enqueue(new MockResponse().setResponseCode(503));
+        mockWebServer.enqueue(new MockResponse().setBody(loadFixture("person-voices-response.json"))
+                .setHeader("Content-Type", "application/json"));
+
+        assertEquals(3, jikanApiService.getPersonVoiceRoles(2001).size());
+        assertEquals(2, mockWebServer.getRequestCount());
+    }
+
+    @Test
+    void fetchWithRetry_stopsAfterBoundedAttempts() {
+        mockWebServer.enqueue(new MockResponse().setResponseCode(500));
+        mockWebServer.enqueue(new MockResponse().setResponseCode(500));
+        mockWebServer.enqueue(new MockResponse().setResponseCode(500));
+
+        assertThrows(JikanApiService.JikanApiException.class,
+                () -> jikanApiService.getPersonVoiceRoles(2001));
+        assertEquals(3, mockWebServer.getRequestCount());
+    }
+
+    @Test
+    void nonRetryableClientErrorIsExplicitAndNotRetried() {
+        mockWebServer.enqueue(new MockResponse().setResponseCode(404));
+
+        assertThrows(JikanApiService.JikanApiException.class,
+                () -> jikanApiService.getPersonVoiceRoles(2001));
+        assertEquals(1, mockWebServer.getRequestCount());
+    }
+
+    @Test
+    void successfulEmptyDataRemainsAValidEmptyResult() {
+        mockWebServer.enqueue(new MockResponse().setBody("{\"data\":[]}")
+                .setHeader("Content-Type", "application/json"));
+
+        assertTrue(jikanApiService.getAnimeCharacters(12345).isEmpty());
+    }
+
+    @Test
+    void malformedPayloadIsExplicitlyRejected() {
+        mockWebServer.enqueue(new MockResponse().setBody("not-json")
+                .setHeader("Content-Type", "application/json"));
+
+        assertThrows(JikanApiService.JikanApiException.class,
+                () -> jikanApiService.getAnimeCharacters(12345));
+    }
+
+    @Test
+    void incompletePaginationPageIsExplicitlyRejected() {
+        mockWebServer.enqueue(new MockResponse().setBody(
+                "{\"data\":[],\"pagination\":{\"items\":{\"total\":1},\"has_next_page\":true}}")
+                .setHeader("Content-Type", "application/json"));
+        mockWebServer.enqueue(new MockResponse().setBody("{\"data\":[]}")
+                .setHeader("Content-Type", "application/json"));
+
+        assertThrows(JikanApiService.JikanApiException.class,
+                () -> jikanApiService.getCurrentSeasonAnime());
+    }
+
+    @Test
+    void timeoutIsExplicitlyRejected() {
+        mockWebServer.enqueue(new MockResponse().setBody("{\"data\":[]}")
+                .setBodyDelay(100, TimeUnit.MILLISECONDS));
+        JikanApiService shortTimeoutClient = new JikanApiService(mockWebServer.url("/").toString(), 0,
+                new ObjectMapper(), 100, 20, 1, 0, 0, 0);
+
+        assertThrows(JikanApiService.JikanApiException.class,
+                () -> shortTimeoutClient.getAnimeCharacters(12345));
+    }
+
+    @Test
+    void connectionFailureIsExplicitlyRejected() {
+        JikanApiService unavailableClient = new JikanApiService("http://127.0.0.1:1", 0,
+                new ObjectMapper(), 100, 100, 1, 0, 0, 0);
+
+        assertThrows(JikanApiService.JikanApiException.class,
+                () -> unavailableClient.getAnimeCharacters(12345));
+    }
+
+    @Test
+    void consecutiveRequestsRemainPaced() {
+        mockWebServer.enqueue(new MockResponse().setBody("{\"data\":[]}"));
+        mockWebServer.enqueue(new MockResponse().setBody("{\"data\":[]}"));
+        long started = System.nanoTime();
+
+        jikanApiService.getAnimeCharacters(12345);
+        jikanApiService.getAnimeCharacters(12345);
+
+        long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
+        assertTrue(elapsedMillis >= 8, "requests should remain behind the pacing gate");
     }
 
     // Helper methods

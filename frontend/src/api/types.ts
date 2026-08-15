@@ -44,6 +44,20 @@ export interface SeasonInfo {
     year: number | null
     lastRefreshed: string | null
     voiceActorCount: number
+    lastAttempt?: string | null
+    lastSuccess?: string | null
+    refreshOutcome?: string | null
+    activeSeason?: string | null
+    activeYear?: number | null
+    candidateSeason?: string | null
+    candidateYear?: number | null
+    incompleteAnimeCount?: number
+    refreshInProgress?: boolean
+    refreshPhase?: string | null
+    completedAnime?: number
+    totalAnime?: number
+    completedVoiceActors?: number
+    totalVoiceActors?: number
 }
 
 export interface CompareResult {

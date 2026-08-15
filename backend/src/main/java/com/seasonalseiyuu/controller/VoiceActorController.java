@@ -3,6 +3,7 @@ package com.seasonalseiyuu.controller;
 import com.seasonalseiyuu.model.CompareResult;
 import com.seasonalseiyuu.model.VoiceActor;
 import com.seasonalseiyuu.model.VoiceActorSummary;
+import com.seasonalseiyuu.model.RefreshHealth;
 import com.seasonalseiyuu.service.CompareService;
 import com.seasonalseiyuu.service.SeasonDataService;
 import org.springframework.http.ResponseEntity;
@@ -74,16 +75,49 @@ public class VoiceActorController {
          */
         @GetMapping("/season-info")
         public ResponseEntity<SeasonInfo> getSeasonInfo() {
+                RefreshHealth health = seasonDataService.getRefreshHealth();
+                SeasonDataService.RefreshStatus status = seasonDataService.getRefreshStatus();
+                if (health == null) health = RefreshHealth.empty();
+                if (status == null) status = new SeasonDataService.RefreshStatus(false, "Idle", 0, 0);
+                final RefreshHealth responseHealth = health;
+                final SeasonDataService.RefreshStatus responseStatus = status;
                 return seasonDataService.getSeasonData()
-                                .map(cache -> ResponseEntity.ok(new SeasonInfo(
-                                                cache.season(),
-                                                cache.year(),
-                                                cache.voiceActors().size(),
-                                                cache.lastRefreshed().toString())))
-                                .orElse(ResponseEntity.ok(new SeasonInfo(
-                                                null, 0, 0, null)));
+                                .map(cache -> ResponseEntity.ok(SeasonInfo.from(cache, responseHealth, responseStatus)))
+                                .orElse(ResponseEntity.ok(SeasonInfo.empty(responseHealth, responseStatus)));
         }
 
-        public record SeasonInfo(String season, int year, int voiceActorCount, String lastRefreshed) {
+        public record SeasonInfo(
+                        String season, Integer year, int voiceActorCount, String lastRefreshed,
+                        String lastAttempt, String lastSuccess, String refreshOutcome,
+                        String activeSeason, Integer activeYear, String candidateSeason, Integer candidateYear,
+                        int incompleteAnimeCount, boolean refreshInProgress, String refreshPhase,
+                        int completedAnime, int totalAnime, int completedVoiceActors, int totalVoiceActors) {
+                public static SeasonInfo from(com.seasonalseiyuu.model.SeasonCache cache,
+                                RefreshHealth health, SeasonDataService.RefreshStatus status) {
+                        String refreshed = cache.lastRefreshed() == null ? null : cache.lastRefreshed().toString();
+                        return new SeasonInfo(cache.season(), cache.year(), cache.voiceActors().size(), refreshed,
+                                        instant(health.lastAttempt()), instant(health.lastSuccess(), refreshed), health.outcome(),
+                                        health.activeSeason() == null ? cache.season() : health.activeSeason(),
+                                        health.activeYear() == null ? cache.year() : health.activeYear(),
+                                        health.candidateSeason(), health.candidateYear(), health.incompleteAnimeCount(),
+                                        status.inProgress(), status.phase(), status.completedAnime(), status.totalAnime(),
+                                        status.completedVoiceActors(), status.totalVoiceActors());
+                }
+
+                public static SeasonInfo empty(RefreshHealth health, SeasonDataService.RefreshStatus status) {
+                        return new SeasonInfo(null, null, 0, null, instant(health.lastAttempt()),
+                                        instant(health.lastSuccess()), health.outcome(), health.activeSeason(), health.activeYear(),
+                                        health.candidateSeason(), health.candidateYear(), health.incompleteAnimeCount(),
+                                        status.inProgress(), status.phase(), status.completedAnime(), status.totalAnime(),
+                                        status.completedVoiceActors(), status.totalVoiceActors());
+                }
+
+                private static String instant(java.time.Instant value) {
+                        return value == null ? null : value.toString();
+                }
+
+                private static String instant(java.time.Instant value, String fallback) {
+                        return value == null ? fallback : value.toString();
+                }
         }
 }

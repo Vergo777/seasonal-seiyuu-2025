@@ -1,3 +1,5 @@
 .vscode
 frontend/playwright-report/
 frontend/test-results/
+backend/data/refresh-health.json
+backend/data/refresh-progress.json

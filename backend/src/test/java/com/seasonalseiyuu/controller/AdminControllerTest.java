@@ -112,4 +112,25 @@ class AdminControllerTest {
                 .andExpect(jsonPath("$.inProgress", is(false)))
                 .andExpect(jsonPath("$.message", is("Complete")));
     }
+
+    @Test
+    void refreshStatus_includesAdditiveHealthAndLiveProgressFieldsWithoutCredentials() throws Exception {
+        RefreshStatus status = new RefreshStatus(true, "Fetching", 4, 10,
+                java.time.Instant.parse("2026-01-01T00:00:00Z"),
+                java.time.Instant.parse("2025-12-31T00:00:00Z"), "running",
+                "fall", 2025, "winter", 2026, 2, "FETCHING_CHARACTERS",
+                4, 10, 1, 3);
+        when(seasonDataService.getRefreshStatus()).thenReturn(status);
+
+        mockMvc.perform(get("/api/admin/refresh/status")
+                        .header("X-API-Key", VALID_API_KEY))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.outcome", is("running")))
+                .andExpect(jsonPath("$.candidateSeason", is("winter")))
+                .andExpect(jsonPath("$.incompleteAnimeCount", is(2)))
+                .andExpect(jsonPath("$.completedAnime", is(4)))
+                .andExpect(jsonPath("$.completedVoiceActors", is(1)))
+                .andExpect(jsonPath("$..apiKey").doesNotExist())
+                .andExpect(jsonPath("$..authorization").doesNotExist());
+    }
 }
