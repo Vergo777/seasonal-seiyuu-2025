@@ -17,8 +17,8 @@ Seasonal Seiyuu makes use of the incredible [Jikan API](https://docs.jikan.moe/)
 ## Tech Stack
 
 - **Backend**: Spring Boot 3.5.5 + Java 25 + Gradle 9.1.0
-- **Frontend**: React 18 + TypeScript + Vite (built to `backend/src/main/resources/static/`)
-- **Testing**: Vitest + React Testing Library (frontend), JUnit 5 + MockWebServer (backend)
+- **Frontend**: React 19 + TypeScript + Vite (built to `backend/src/main/resources/static/`)
+- **Testing**: Vitest + React Testing Library + Playwright smoke tests (frontend), JUnit 5 + MockWebServer (backend)
 - **Data**: Jikan API v4 (MyAnimeList) → cached to local JSON file
 
 ## ✨ Features

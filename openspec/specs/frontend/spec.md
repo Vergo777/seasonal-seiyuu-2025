@@ -1,7 +1,7 @@
 # frontend Specification
 
 ## Purpose
-Define the capabilities and behavior of the React 18 + TypeScript frontend for Seasonal Seiyuu. This specification covers the voice actor browsing, detail views, comparison tool, search functionality, and testing requirements.
+Define the capabilities and behavior of the React 19 + TypeScript frontend for Seasonal Seiyuu. This specification covers the voice actor browsing, detail views, comparison tool, search functionality, and testing requirements.
 ## Requirements
 ### Requirement: Voice Actor Grid Display
 The system SHALL display a grid of voice actor cards on the home page, sorted by seasonal show count (descending).
@@ -68,4 +68,3 @@ The system SHALL have automated tests for all React components and pages.
 #### Scenario: Page integration tests pass
 - **WHEN** `npm run test` is executed
 - **THEN** all page-level integration tests pass
-

@@ -1,0 +1,52 @@
+schema: spec-driven
+
+context: |
+  Seasonal Seiyuu helps anime fans discover Japanese voice actors appearing in
+  the current anime season. Users browse a voice-actor grid, open detailed
+  profiles and career roles, and compare two actors to find shared anime.
+
+  Stack:
+  - Backend: Spring Boot 3.5.5, Java 25, Gradle, JUnit 5, MockWebServer.
+  - Frontend: React 19, TypeScript, Vite, React Router, Vitest, React Testing
+    Library, and Playwright browser smoke tests.
+  - Data: Jikan API v4 (unofficial MyAnimeList API), cached to local JSON; no
+    database.
+  - Deployment: frontend builds into backend/src/main/resources/static/ and is
+    served by a Spring Boot monolithic JAR behind nginx and systemd on a VPS.
+
+  Important constraints:
+  - Jikan requests must remain rate-limited at approximately one request per
+    second; refreshes can take 10-15 minutes and must remain resumable.
+  - The admin refresh endpoints use a single API key; never commit credentials
+    or expose them in proposals, tests, logs, or documentation.
+  - Preserve the existing /seiyuu context path and API contracts unless a
+    change explicitly proposes otherwise.
+  - Frontend changes should include relevant Vitest coverage and update the
+    Playwright smoke tests when user flows change.
+
+  Implementation conventions:
+  - Keep Spring controllers thin, use constructor injection, and put business
+    logic in services. Prefer records for immutable DTOs and model values.
+  - Keep frontend API access typed in frontend/src/api and favor user-facing
+    behavior in component tests over implementation details.
+
+rules:
+  proposal:
+    - State the user-visible behavior, non-goals, affected code, and rollout or rollback concerns.
+    - Identify API, data-cache, deployment, and security impact when applicable.
+  specs:
+    - Use SHALL or MUST for normative requirements.
+    - Include at least one #### Scenario: with concrete WHEN and THEN behavior per requirement.
+  design:
+    - Document trade-offs for architecture, external API, caching, security, or deployment changes.
+  tasks:
+    - Include implementation, test, documentation, and validation work where applicable.
+
+operations:
+  apply:
+    guidance:
+      - Run the relevant frontend and backend tests before marking tasks complete.
+      - Keep generated frontend assets and deployment changes intentional and reviewable.
+  archive:
+    guidance:
+      - Validate the final specs and confirm that all implementation tasks are complete before archiving.
