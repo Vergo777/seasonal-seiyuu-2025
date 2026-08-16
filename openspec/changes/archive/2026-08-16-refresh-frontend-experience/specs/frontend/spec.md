@@ -1,9 +1,4 @@
-# frontend Specification
-
-## Purpose
-Define the capabilities and behavior of the React 19 + TypeScript frontend for Seasonal Seiyuu. This specification covers the voice actor browsing, detail views, comparison tool, search functionality, and testing requirements.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Voice Actor Grid Display
 The system SHALL display the active season as a content-first voice-actor catalogue sorted by seasonal show count descending, and SHALL present each actor in a scannable card with their image, name, seasonal show count, and career-role count.
@@ -133,6 +128,8 @@ The system SHALL have automated component, integration, browser, and accessibili
 #### Scenario: Automated accessibility checks pass
 - **WHEN** automated accessibility checks run against the representative home, detail, and comparison states
 - **THEN** no detected WCAG 2.2 A or AA violation remains at serious or critical impact
+
+## ADDED Requirements
 
 ### Requirement: Cohesive Application Shell
 The system SHALL present a consistent application shell and route-aware document context across all frontend pages.

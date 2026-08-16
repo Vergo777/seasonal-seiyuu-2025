@@ -1,195 +1,406 @@
 .home-page {
-    max-width: 1400px;
+    max-width: 1440px;
     margin: 0 auto;
-    padding: 2rem;
+    padding: clamp(1.5rem, 4vw, 3.25rem) clamp(1rem, 4vw, 3rem) 1rem;
 }
 
-.season-header {
+.season-issue {
+    display: grid;
+    grid-template-columns: 5.5rem minmax(0, 1fr) minmax(18rem, 24rem);
+    gap: clamp(1rem, 3vw, 2.75rem);
+    align-items: stretch;
+    padding: 1.15rem 0 1.4rem;
+    border-top: 2px solid var(--ink);
+    border-bottom: 1px solid var(--rule-strong);
+}
+
+.issue-index {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 2.5rem;
-    gap: 0.75rem;
+    justify-content: space-between;
+    padding: 0.15rem 0 0.25rem;
+    color: var(--ink-faint);
+    font-family: var(--font-index);
+    font-size: 0.67rem;
+    letter-spacing: 0.14em;
+    line-height: 1;
+    text-transform: uppercase;
 }
 
-.season-badge-glow {
-    background: rgba(15, 23, 42, 0.6);
-    border: 1px solid var(--accent);
-    padding: 0.75rem 1.5rem;
-    border-radius: 50px;
+.issue-index strong {
+    color: var(--accent);
+    font-size: 2.5rem;
+    font-weight: 500;
+    letter-spacing: 0;
+}
+
+.issue-heading {
+    align-self: center;
+}
+
+.eyebrow,
+.fact-label {
+    margin: 0;
+    color: var(--accent-dark);
+    font-family: var(--font-index);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.13em;
+    line-height: 1.2;
+    text-transform: uppercase;
+}
+
+.issue-heading h1 {
+    margin: 0.25rem 0 0;
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 7vw, 5.7rem);
+    font-weight: 600;
+    letter-spacing: -0.055em;
+    line-height: 0.88;
+}
+
+.issue-deck {
+    max-width: 31rem;
+    margin: 0.9rem 0 0;
+    color: var(--ink-muted);
+    font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+    line-height: 1.4;
+}
+
+.issue-facts {
+    display: grid;
+    align-content: center;
+    gap: 0.75rem;
+    padding-left: 1.25rem;
+    border-left: 1px solid var(--rule-strong);
+    color: var(--ink-muted);
+    font-size: 0.82rem;
+    line-height: 1.35;
+}
+
+.issue-fact {
+    display: grid;
+    gap: 0.15rem;
+}
+
+.issue-fact--count {
     display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1px solid var(--rule);
+}
+
+.issue-fact--count strong {
+    color: var(--ink);
+    font-family: var(--font-index);
+    font-size: 2.4rem;
+    font-weight: 500;
+    line-height: 0.9;
+}
+
+.issue-fact--count span {
+    color: var(--accent-dark);
+    font-family: var(--font-index);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.issue-fact--note {
+    color: var(--ink-muted);
+}
+
+.catalogue {
+    padding-top: clamp(2rem, 5vw, 4rem);
+}
+
+.catalogue-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid var(--rule-strong);
+}
+
+.catalogue-header h2 {
+    margin: 0.15rem 0 0;
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 600;
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+}
+
+.catalogue-count {
+    margin: 0;
+    color: var(--ink-muted);
+    font-family: var(--font-index);
+    font-size: 0.84rem;
+    letter-spacing: 0.04em;
+    text-align: right;
+}
+
+.catalogue-tools {
+    position: sticky;
+    top: 4.5rem;
+    z-index: 10;
+    display: grid;
+    grid-template-columns: auto minmax(18rem, 31rem);
     align-items: center;
+    justify-content: space-between;
     gap: 1rem;
-    box-shadow: 0 0 20px rgba(255, 126, 182, 0.15);
+    padding: 1rem 0;
+    background: color-mix(in srgb, var(--paper) 94%, transparent);
+    border-bottom: 1px solid var(--rule);
     backdrop-filter: blur(10px);
 }
 
-.season-emoji {
-    font-size: 1.5rem;
+.search-label {
+    color: var(--ink);
+    font-family: var(--font-index);
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
 }
 
-.season-name {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.5rem;
-    letter-spacing: 0.1em;
-    color: var(--text-hero);
-}
-
-.season-divider {
-    width: 1px;
-    height: 24px;
-    background: var(--border);
-}
-
-.season-count {
+.search-control {
+    position: relative;
     display: flex;
-    align-items: baseline;
-    gap: 0.4rem;
+    align-items: center;
+    min-width: 0;
 }
 
-.count-val {
-    font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.5rem;
+.search-glyph {
+    position: absolute;
+    left: 0.8rem;
     color: var(--accent);
-}
-
-.count-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    font-weight: 700;
-}
-
-.season-freshness {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.35rem 1rem;
-    max-width: 760px;
-    color: var(--text-muted);
-    font-size: 0.8rem;
-    text-align: center;
-}
-
-.last-successful-refresh {
-    color: var(--text-hero);
-    font-weight: 600;
-}
-
-.refresh-explanation,
-.incomplete-explanation {
-    color: var(--text-muted);
-}
-
-.search-container {
-    position: sticky;
-    top: 70px;
-    z-index: 50;
-    background: linear-gradient(180deg, var(--bg-deep) 0%, rgba(15, 23, 42, 0.95) 100%);
-    padding: 1rem 0;
-    margin-bottom: 1.5rem;
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    line-height: 1;
+    pointer-events: none;
 }
 
 .search-input {
     width: 100%;
-    padding: 1rem 1.5rem;
+    min-height: 2.75rem;
+    padding: 0.65rem 4.5rem 0.65rem 2.5rem;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--rule-strong);
+    border-radius: 0;
     font-size: 1rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    color: white;
-    outline: none;
-    transition: all 0.2s ease;
 }
 
 .search-input::placeholder {
-    color: rgba(255, 255, 255, 0.4);
+    color: var(--ink-faint);
 }
 
 .search-input:focus {
-    border-color: var(--accent);
-    background: var(--bg-elevated);
+    border-color: var(--indigo);
+    outline: 0;
+}
+
+.clear-search {
+    position: absolute;
+    right: 0.35rem;
+    min-height: 2.2rem;
+    padding: 0.35rem 0.65rem;
+    color: var(--indigo);
+    background: transparent;
+    border: 0;
+    font-family: var(--font-index);
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.clear-search:hover {
+    color: var(--accent-dark);
 }
 
 .va-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(164px, 1fr));
+    gap: clamp(0.75rem, 2vw, 1.35rem);
+    padding-top: 1.35rem;
 }
 
 .va-card-link {
-    text-decoration: none;
+    min-width: 0;
     color: inherit;
+    text-decoration: none;
+    content-visibility: auto;
+    contain-intrinsic-size: 320px;
 }
 
-.loading-state,
-.error-state,
-.empty-state,
+.va-card-link:hover .va-card,
+.va-card-link:focus-visible .va-card {
+    border-color: var(--accent);
+    box-shadow: 0 0.6rem 1.5rem rgba(25, 24, 20, 0.12);
+    transform: translateY(-3px);
+}
+
+.va-card-link:hover .va-card-image,
+.va-card-link:focus-visible .va-card-image {
+    filter: saturate(1.08);
+    transform: scale(1.025);
+}
+
 .no-results {
+    margin-top: 1.35rem;
+    padding: clamp(2rem, 5vw, 4rem) 1rem;
+    border-top: 1px solid var(--rule-strong);
+    border-bottom: 1px solid var(--rule);
     text-align: center;
-    padding: 4rem 2rem;
-    color: rgba(255, 255, 255, 0.7);
 }
 
-.spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 1rem;
+.no-results h2 {
+    margin: 0.5rem auto;
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: clamp(1.7rem, 4vw, 2.5rem);
+    font-weight: 600;
 }
 
-@keyframes spin {
-    to {
-        transform: rotate(360deg);
+.no-results > p:not(.eyebrow) {
+    margin: 0 auto 1.25rem;
+    color: var(--ink-muted);
+}
+
+.text-button {
+    min-height: 2.75rem;
+    padding: 0.65rem 0.9rem;
+    color: var(--paper);
+    background: var(--indigo);
+    border: 1px solid var(--indigo);
+    font-family: var(--font-index);
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: background-color 160ms ease, border-color 160ms ease;
+}
+
+.text-button:hover {
+    background: var(--accent-dark);
+    border-color: var(--accent-dark);
+}
+
+@media (max-width: 900px) {
+    .season-issue {
+        grid-template-columns: 4.5rem minmax(0, 1fr);
+    }
+
+    .issue-facts {
+        grid-column: 2;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 1rem 0 0;
+        border-top: 1px solid var(--rule);
+        border-left: 0;
+    }
+
+    .issue-fact--count {
+        padding-bottom: 0;
+        border-bottom: 0;
+    }
+
+    .issue-fact--note {
+        grid-column: 1 / -1;
     }
 }
 
-/* Mobile Responsiveness */
 @media (max-width: 640px) {
     .home-page {
-        padding: 1rem;
+        padding-top: 1.25rem;
     }
 
-    .season-badge-glow {
-        flex-direction: column;
-        gap: 0.5rem;
-        padding: 1rem;
-        width: 100%;
-        border-radius: 20px;
+    .season-issue {
+        grid-template-columns: 3.2rem minmax(0, 1fr);
+        gap: 0.8rem;
     }
 
-    .season-divider {
-        width: 50%;
-        height: 1px;
-        background: rgba(255, 255, 255, 0.1);
+    .issue-index {
+        font-size: 0.58rem;
     }
 
-    .season-emoji {
+    .issue-index strong {
         font-size: 2rem;
     }
 
-    .search-container {
-        position: relative;
-        /* Normal flow on mobile - no sticky issues */
-        top: auto;
-        padding: 0.5rem 0;
-        margin-bottom: 1rem;
+    .issue-facts {
+        grid-template-columns: 1fr;
+    }
+
+    .issue-fact--note {
+        grid-column: auto;
+    }
+
+    .catalogue-header {
+        align-items: start;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .catalogue-count {
+        text-align: left;
+    }
+
+    .catalogue-tools {
+        top: 4rem;
+        grid-template-columns: 1fr;
+        gap: 0.45rem;
     }
 
     .va-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 0.75rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 0.7rem;
+    }
+
+    .va-card-content {
+        padding: 0.7rem;
+    }
+
+    .va-card-name {
+        font-size: 1.05rem;
+    }
+
+    .stat-value {
+        font-size: 1.75rem;
+    }
+
+    .stat-value-sm {
+        font-size: 1.1rem;
+    }
+
+    .stat-label,
+    .stat-label-sm {
+        font-size: 0.58rem;
     }
 }
 
-/* Very narrow screens - single column */
-@media (max-width: 400px) {
+@media (max-width: 360px) {
+    .issue-heading h1 {
+        font-size: 2.35rem;
+    }
+
+    .issue-deck {
+        font-size: 0.9rem;
+    }
+
     .va-grid {
-        grid-template-columns: 1fr;
-        gap: 1rem;
+        gap: 0.5rem;
+    }
+
+    .va-card-content {
+        padding-inline: 0.55rem;
+    }
+
+    .catalogue-number {
+        top: 0.4rem;
+        left: 0.4rem;
     }
 }

@@ -3,17 +3,37 @@ import './VoiceActorCard.css'
 
 interface Props {
     voiceActor: VoiceActorSummary
+    catalogueNumber?: number
+    priority?: boolean
 }
 
-function VoiceActorCard({ voiceActor }: Props) {
+function VoiceActorCard({ voiceActor, catalogueNumber, priority = false }: Props) {
+    const initials = voiceActor.name
+        .split(/\s+/)
+        .map(part => part[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
+
     return (
-        <div className="va-card">
+        <article className="va-card">
             <div className="va-card-image-container">
+                <span className="catalogue-number" aria-hidden="true">
+                    {String(catalogueNumber ?? '').padStart(2, '0')}
+                </span>
+                <span className="image-fallback" aria-hidden="true">{initials}</span>
                 <img
                     src={voiceActor.imageUrl || '/placeholder-va.png'}
                     alt={voiceActor.name}
                     className="va-card-image"
-                    loading="lazy"
+                    width="240"
+                    height="320"
+                    loading={priority ? 'eager' : 'lazy'}
+                    decoding="async"
+                    onError={event => {
+                        event.currentTarget.hidden = true
+                        event.currentTarget.parentElement?.classList.add('image-missing')
+                    }}
                 />
             </div>
             <div className="va-card-content">
@@ -26,11 +46,11 @@ function VoiceActorCard({ voiceActor }: Props) {
                     </div>
                     <div className="va-stat-secondary">
                         <span className="stat-value-sm">{voiceActor.totalCareerRoles}</span>
-                        <span className="stat-label-sm">Roles</span>
+                        <span className="stat-label-sm">CAREER ROLES</span>
                     </div>
                 </div>
             </div>
-        </div>
+        </article>
     )
 }
 

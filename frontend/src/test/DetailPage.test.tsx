@@ -4,9 +4,8 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import DetailPage from '../pages/DetailPage'
 import { fetchVoiceActor } from '../api/client'
 
-// Mock the API client
 vi.mock('../api/client', () => ({
-    fetchVoiceActor: vi.fn()
+    fetchVoiceActor: vi.fn(),
 }))
 
 const mockVoiceActor = {
@@ -14,89 +13,73 @@ const mockVoiceActor = {
     name: 'Test Voice Actor',
     imageUrl: 'test-url.jpg',
     totalSeasonalShows: 5,
-    totalCareerRoles: 100,
     seasonalRoles: [
         {
             anime: { malId: 1, title: 'Seasonal Anime', imageUrl: 'anime.jpg' },
-            character: { malId: 1, name: 'Char A', imageUrl: 'char.jpg' }
-        }
+            character: { malId: 1, name: 'Char A', imageUrl: 'char.jpg' },
+        },
     ],
     allTimeRoles: [
         {
             anime: { malId: 2, title: 'Old Anime', imageUrl: 'old.jpg' },
-            character: { malId: 2, name: 'Char B', imageUrl: 'old_char.jpg' }
-        }
-    ]
+            character: { malId: 2, name: 'Char B', imageUrl: 'old_char.jpg' },
+        },
+    ],
 }
 
 describe('DetailPage', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-    })
+    beforeEach(() => vi.clearAllMocks())
 
-    const renderDetailPage = () => {
+    const renderDetailPage = (initialEntry = '/seiyuu/va/1') => {
         render(
-            <MemoryRouter initialEntries={['/seiyuu/va/1']}>
+            <MemoryRouter initialEntries={[initialEntry]}>
                 <Routes>
                     <Route path="/seiyuu/va/:id" element={<DetailPage />} />
                 </Routes>
-            </MemoryRouter>
+            </MemoryRouter>,
         )
     }
 
-    it('renders loading state initially', () => {
-        (fetchVoiceActor as any).mockImplementation(() => new Promise(() => { }))
+    it('renders a stable loading state', () => {
+        ;(fetchVoiceActor as any).mockImplementation(() => new Promise(() => { }))
         renderDetailPage()
-        expect(screen.getByText('Loading voice actor...')).toBeInTheDocument()
+        expect(screen.getByText('Loading voice actor credits…')).toBeInTheDocument()
     })
 
-    it('renders voice actor profile in sidebar', async () => {
-        (fetchVoiceActor as any).mockResolvedValue(mockVoiceActor)
+    it('renders identity, counts, and seasonal credits', async () => {
+        ;(fetchVoiceActor as any).mockResolvedValue(mockVoiceActor)
         renderDetailPage()
 
-        await waitFor(() => {
-            expect(screen.getByText('Test Voice Actor ↗')).toBeInTheDocument()
-        })
-
-        // Check for stats in sidebar
-        expect(screen.getByText('SEASON SHOWS')).toBeInTheDocument()
-        expect(screen.getByText('5')).toBeInTheDocument()
-        expect(screen.getByText('CAREER ROLES')).toBeInTheDocument()
-        expect(screen.getByText('1')).toBeInTheDocument()
-    })
-
-    it('renders seasonal roles by default', async () => {
-        (fetchVoiceActor as any).mockResolvedValue(mockVoiceActor)
-        renderDetailPage()
-
-        await waitFor(() => {
-            expect(screen.getByText('Seasonal Anime')).toBeInTheDocument()
-        })
+        await waitFor(() => expect(screen.getByRole('heading', { name: 'Test Voice Actor' })).toBeInTheDocument())
+        expect(screen.getByRole('link', { name: /MyAnimeList profile/ })).toHaveAttribute('target', '_blank')
+        expect(screen.getByText('Season shows')).toBeInTheDocument()
+        expect(screen.getByText('Career roles')).toBeInTheDocument()
+        expect(screen.getByText('Seasonal Anime')).toBeInTheDocument()
         expect(screen.queryByText('Old Anime')).not.toBeInTheDocument()
     })
 
-    it('switches to All-Time Roles tab', async () => {
-        (fetchVoiceActor as any).mockResolvedValue(mockVoiceActor)
-        renderDetailPage()
+    it('restores and changes the role view through URL-backed tabs', async () => {
+        ;(fetchVoiceActor as any).mockResolvedValue(mockVoiceActor)
+        renderDetailPage('/seiyuu/va/1?roles=career')
 
-        await waitFor(() => {
-            expect(screen.getByText('Test Voice Actor ↗')).toBeInTheDocument()
-        })
+        await waitFor(() => expect(screen.getByText('Old Anime')).toBeInTheDocument())
+        expect(screen.getByRole('tab', { name: 'All-Time Roles' })).toHaveAttribute('aria-selected', 'true')
 
-        const allTimeTab = screen.getByText('All-Time Roles')
-        fireEvent.click(allTimeTab)
+        const seasonalTab = screen.getByRole('tab', { name: 'This Season' })
+        fireEvent.keyDown(screen.getByRole('tab', { name: 'All-Time Roles' }), { key: 'ArrowLeft' })
+        await waitFor(() => expect(seasonalTab).toHaveFocus())
+        fireEvent.click(seasonalTab)
 
-        expect(screen.getByText('Old Anime')).toBeInTheDocument()
-        expect(screen.queryByText('Seasonal Anime')).not.toBeInTheDocument()
+        expect(screen.getByText('Seasonal Anime')).toBeInTheDocument()
+        expect(screen.queryByText('Old Anime')).not.toBeInTheDocument()
     })
 
-    it('handles error state', async () => {
-        (fetchVoiceActor as any).mockRejectedValue(new Error('Network Error'))
+    it('handles error state with a route back to Browse', async () => {
+        ;(fetchVoiceActor as any).mockRejectedValue(new Error('Network Error'))
         renderDetailPage()
 
-        await waitFor(() => {
-            expect(screen.getByText('Voice Actor Not Found')).toBeInTheDocument()
-            expect(screen.getByText('Network Error')).toBeInTheDocument()
-        })
+        await waitFor(() => expect(screen.getByRole('heading', { name: 'Voice actor not found' })).toBeInTheDocument())
+        expect(screen.getByText('Network Error')).toBeInTheDocument()
+        expect(screen.getByRole('link', { name: 'Return to the cast catalogue' })).toHaveAttribute('href', '/')
     })
 })

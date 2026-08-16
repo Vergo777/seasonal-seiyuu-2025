@@ -19,9 +19,15 @@ const mockSeasonInfo = {
 }
 
 const mockVoiceActors = [
-    { malId: 1, name: 'Sugita Tomokazu', totalSeasonalShows: 5, totalCareerRoles: 100 },
-    { malId: 2, name: 'Hanazawa Kana', totalSeasonalShows: 3, totalCareerRoles: 200 }
+    { malId: 1, name: 'Sugita Tomokazu', imageUrl: '', totalSeasonalShows: 5, totalCareerRoles: 100 },
+    { malId: 2, name: 'Hanazawa Kana', imageUrl: '', totalSeasonalShows: 3, totalCareerRoles: 200 }
 ]
+
+const renderHome = (initialEntries = ['/']) => render(
+    <MemoryRouter initialEntries={initialEntries}>
+        <HomePage />
+    </MemoryRouter>,
+)
 
 describe('HomePage', () => {
     beforeEach(() => {
@@ -31,19 +37,15 @@ describe('HomePage', () => {
     it('renders loading state initially', () => {
         (fetchVoiceActors as any).mockImplementation(() => new Promise(() => { }));
         (fetchSeasonInfo as any).mockImplementation(() => new Promise(() => { }));
-        render(<HomePage />)
-        expect(screen.getByText('Loading voice actors...')).toBeInTheDocument()
+        renderHome()
+        expect(screen.getByText('Loading the catalogue…')).toBeInTheDocument()
     })
 
     it('renders season info and voice actors list', async () => {
         (fetchVoiceActors as any).mockResolvedValue(mockVoiceActors);
         (fetchSeasonInfo as any).mockResolvedValue(mockSeasonInfo);
 
-        render(
-            <MemoryRouter>
-                <HomePage />
-            </MemoryRouter>
-        )
+        renderHome()
 
         await waitFor(() => {
             expect(screen.getByText('SUMMER 2025')).toBeInTheDocument()
@@ -51,8 +53,7 @@ describe('HomePage', () => {
             expect(screen.getByText('Hanazawa Kana')).toBeInTheDocument()
         })
 
-        // Check season badge specific parts
-        expect(screen.getByText('☀️')).toBeInTheDocument() // Emoji for Summer
+        expect(screen.getByRole('heading', { name: 'SUMMER 2025' })).toBeInTheDocument()
         expect(screen.getByText('20')).toBeInTheDocument() // Count
         expect(screen.getByText(/Last successful refresh:/)).toBeInTheDocument()
         expect(screen.getByText(/Cast data refreshes automatically/)).toBeInTheDocument()
@@ -66,7 +67,7 @@ describe('HomePage', () => {
             lastSuccess: null, lastRefreshed: null
         })
 
-        render(<HomePage />)
+        renderHome()
 
         await waitFor(() => expect(screen.getByText('SUMMER 2025')).toBeInTheDocument())
         expect(screen.queryByText(/Last successful refresh:/)).not.toBeInTheDocument()
@@ -77,55 +78,45 @@ describe('HomePage', () => {
         (fetchVoiceActors as any).mockResolvedValue(mockVoiceActors);
         (fetchSeasonInfo as any).mockResolvedValue(mockSeasonInfo);
 
-        render(
-            <MemoryRouter>
-                <HomePage />
-            </MemoryRouter>
-        )
+        renderHome()
 
         await waitFor(() => {
             expect(screen.getByText('Sugita Tomokazu')).toBeInTheDocument()
         })
 
-        const searchInput = screen.getByPlaceholderText('🔍 Search voice actors...')
+        const searchInput = screen.getByRole('searchbox', { name: 'Search the cast catalogue' })
         fireEvent.change(searchInput, { target: { value: 'Kana' } })
 
         expect(screen.getByText('Hanazawa Kana')).toBeInTheDocument()
         expect(screen.queryByText('Sugita Tomokazu')).not.toBeInTheDocument()
+        expect(screen.getByText('1 result for “Kana”')).toBeInTheDocument()
     })
 
     it('shows no results message when search matches nothing', async () => {
         (fetchVoiceActors as any).mockResolvedValue(mockVoiceActors);
         (fetchSeasonInfo as any).mockResolvedValue(mockSeasonInfo);
 
-        render(
-            <MemoryRouter>
-                <HomePage />
-            </MemoryRouter>
-        )
+        renderHome()
 
         await waitFor(() => {
             expect(screen.getByText('Sugita Tomokazu')).toBeInTheDocument()
         })
 
-        const searchInput = screen.getByPlaceholderText('🔍 Search voice actors...')
+        const searchInput = screen.getByRole('searchbox', { name: 'Search the cast catalogue' })
         fireEvent.change(searchInput, { target: { value: 'NonExistent' } })
 
-        expect(screen.getByText('No voice actors found matching "NonExistent"')).toBeInTheDocument()
+        expect(screen.getByText('No voice actors found for “NonExistent”')).toBeInTheDocument()
+        expect(screen.getByRole('button', { name: 'Clear search' })).toBeInTheDocument()
     })
 
     it('shows empty state when no data available', async () => {
         (fetchVoiceActors as any).mockResolvedValue([]);
         (fetchSeasonInfo as any).mockResolvedValue(mockSeasonInfo);
 
-        render(
-            <MemoryRouter>
-                <HomePage />
-            </MemoryRouter>
-        )
+        renderHome()
 
         await waitFor(() => {
-            expect(screen.getByText('No Data Available')).toBeInTheDocument()
+            expect(screen.getByText('No cast data is available')).toBeInTheDocument()
         })
     })
 
@@ -133,11 +124,39 @@ describe('HomePage', () => {
         (fetchVoiceActors as any).mockRejectedValue(new Error('API Error'));
         (fetchSeasonInfo as any).mockResolvedValue(mockSeasonInfo);
 
-        render(<HomePage />)
+        renderHome()
 
         await waitFor(() => {
-            expect(screen.getByText('Error')).toBeInTheDocument()
+            expect(screen.getByRole('heading', { name: 'The cast index could not load' })).toBeInTheDocument()
             expect(screen.getByText('API Error')).toBeInTheDocument()
         })
+    })
+
+    it('restores search from the URL and uses same-tab actor links', async () => {
+        (fetchVoiceActors as any).mockResolvedValue(mockVoiceActors)
+        ;(fetchSeasonInfo as any).mockResolvedValue(mockSeasonInfo)
+
+        renderHome(['/?q=Kana'])
+
+        await waitFor(() => expect(screen.getByText('Hanazawa Kana')).toBeInTheDocument())
+        expect(screen.queryByText('Sugita Tomokazu')).not.toBeInTheDocument()
+        expect(screen.getByRole('searchbox', { name: 'Search the cast catalogue' })).toHaveValue('Kana')
+
+        const actorLink = screen.getByRole('link', { name: /Hanazawa Kana, 3 seasonal shows/ })
+        expect(actorLink).toHaveAttribute('href', '/va/2')
+        expect(actorLink).not.toHaveAttribute('target')
+    })
+
+    it('clears a URL-backed search', async () => {
+        (fetchVoiceActors as any).mockResolvedValue(mockVoiceActors)
+        ;(fetchSeasonInfo as any).mockResolvedValue(mockSeasonInfo)
+
+        renderHome(['/?q=Kana'])
+
+        await waitFor(() => expect(screen.getByText('Hanazawa Kana')).toBeInTheDocument())
+        fireEvent.click(screen.getByRole('button', { name: 'Clear actor search' }))
+
+        expect(screen.getByRole('searchbox', { name: 'Search the cast catalogue' })).toHaveValue('')
+        expect(screen.getByText('Sugita Tomokazu')).toBeInTheDocument()
     })
 })

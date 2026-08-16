@@ -3,45 +3,26 @@ import { render, screen } from '@testing-library/react'
 import AboutPage from '../pages/AboutPage'
 
 describe('AboutPage', () => {
-    it('renders the page title', () => {
+    it('explains the product purpose and progressive completeness', () => {
         render(<AboutPage />)
 
-        expect(screen.getByText('About Seasonal Seiyuu')).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: 'About the cast index' })).toBeInTheDocument()
+        expect(screen.getByRole('heading', { name: 'Read the season through its cast.' })).toBeInTheDocument()
+        expect(screen.getByText(/refreshed automatically/)).toBeInTheDocument()
     })
 
-    it('renders the what is this section', () => {
+    it('documents provenance and the current React stack', () => {
         render(<AboutPage />)
 
-        expect(screen.getByText('🎙️ What is this?')).toBeInTheDocument()
+        expect(screen.getByRole('link', { name: 'Jikan API (external)' })).toHaveAttribute('target', '_blank')
+        expect(screen.getByText(/React 19 · TypeScript · Vite/)).toBeInTheDocument()
+        expect(screen.getByText(/MyAnimeList API/)).toBeInTheDocument()
     })
 
-    it('renders the built with AI section', () => {
+    it('keeps the collaboration note subordinate to product information', () => {
         render(<AboutPage />)
 
-        expect(screen.getByText('🤖 Built with AI')).toBeInTheDocument()
-        expect(screen.getByText(/Antigravity/)).toBeInTheDocument()
-    })
-
-    it('renders the tech stack section', () => {
-        render(<AboutPage />)
-
-        expect(screen.getByText('🛠️ Tech Stack')).toBeInTheDocument()
-        expect(screen.getByText(/Java 25, Spring Boot 3.5/)).toBeInTheDocument()
-        expect(screen.getByText(/React 18, TypeScript, Vite/)).toBeInTheDocument()
-    })
-
-    it('renders the features section', () => {
-        render(<AboutPage />)
-
-        expect(screen.getByText('✨ Features')).toBeInTheDocument()
-    })
-
-    it('renders GitHub link', () => {
-        render(<AboutPage />)
-
-        const githubLink = screen.getByText('View on GitHub →')
-        expect(githubLink).toBeInTheDocument()
-        expect(githubLink).toHaveAttribute('href', 'https://github.com/Vergo777/seasonal-seiyuu-2025')
-        expect(githubLink).toHaveAttribute('target', '_blank')
+        expect(screen.getByText(/human–AI collaboration/)).toBeInTheDocument()
+        expect(screen.getByRole('link', { name: /View the repository/ })).toHaveAttribute('target', '_blank')
     })
 })

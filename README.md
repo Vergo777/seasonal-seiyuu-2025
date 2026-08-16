@@ -1,4 +1,4 @@
-# 🎙️ Seasonal Seiyuu - a way to easily track what seasonal anime your favourite voice actors are involved in
+# Seasonal Seiyuu — a way to easily track which seasonal anime feature your favourite voice actors
 
 ## The problem statement
 
@@ -21,14 +21,37 @@ Seasonal Seiyuu makes use of the incredible [Jikan API](https://docs.jikan.moe/)
 - **Testing**: Vitest + React Testing Library + Playwright smoke tests (frontend), JUnit 5 + MockWebServer (backend)
 - **Data**: Jikan API v4 (MyAnimeList) → cached to local JSON file
 
-## ✨ Features
+## Frontend experience
+
+The frontend is a light editorial cast index: Browse presents the active season
+as a compact issue, Detail uses URL-backed Seasonal/Career role tabs, Compare
+uses keyboard-operable actor comboboxes, and About documents the data
+provenance. The `/seiyuu` route, API contracts, cached data, and refresh
+behavior remain unchanged.
+
+The interface is designed for WCAG 2.2 A/AA review. It uses semantic
+landmarks, visible labels, `:focus-visible` states, reduced-motion support,
+reserved image dimensions, responsive reflow down to 320 px, inline async
+states, and `@axe-core/playwright` checks for representative Browse, Detail,
+and Compare states.
+
+Typography is self-hosted through [Fontsource Newsreader](https://fontsource.org/fonts/newsreader)
+for display copy and [Fontsource Barlow Condensed](https://fontsource.org/fonts/barlow-condensed)
+for catalogue metadata. The bundled font files are licensed under the [SIL
+Open Font License 1.1](https://openfontlicense.org); the package license notices
+are kept in `frontend/node_modules/@fontsource/{newsreader,barlow-condensed}`
+after installation. No runtime Google Fonts request is required.
+
+## Features
 
 - **Voice Actor Grid**: See all voice actors in the current season, sorted by popularity.
 - **Detailed Profiles**: Explore seasonal roles and complete career history for any seiyuu.
-- **Compare Tool**: ⚔️ Compare two voice actors to find all anime they've worked on together.
+- **Compare Tool**: Compare two voice actors to find all anime they've worked on together.
 - **Smart Search**: Searchable autocomplete for quick discovery.
 - **MAL Integrated**: Direct links to MyAnimeList for voice actors, anime, and characters.
-- **AI-Powered**: Built with the help of Antigravity AI.
+
+The implementation was completed with human direction and AI-assisted
+development; the product and its data provenance remain the primary focus.
 
 ## 🚀 Quick Start (Development)
 
@@ -43,6 +66,9 @@ npm run dev
 
 # Run frontend tests
 npm test
+
+# Run browser smoke and accessibility checks
+npm run test:e2e
 
 # In another terminal, start backend
 cd backend

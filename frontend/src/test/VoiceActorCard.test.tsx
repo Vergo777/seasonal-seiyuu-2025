@@ -26,7 +26,7 @@ describe('VoiceActorCard', () => {
     it('renders career roles count', () => {
         render(<VoiceActorCard voiceActor={mockVoiceActor} />)
         expect(screen.getByText('500')).toBeInTheDocument() // Secondary stat value
-        expect(screen.getByText('Roles')).toBeInTheDocument() // Secondary stat label
+        expect(screen.getByText('CAREER ROLES')).toBeInTheDocument() // Secondary stat label
     })
 
     it('renders voice actor image', () => {
@@ -37,10 +37,12 @@ describe('VoiceActorCard', () => {
         expect(img).toHaveAttribute('alt', 'Sugita, Tomokazu')
     })
 
-    it('applies lazy loading to image', () => {
+    it('reserves intrinsic media dimensions and lazy loads by default', () => {
         render(<VoiceActorCard voiceActor={mockVoiceActor} />)
 
         const img = screen.getByRole('img')
         expect(img).toHaveAttribute('loading', 'lazy')
+        expect(img).toHaveAttribute('width', '240')
+        expect(img).toHaveAttribute('height', '320')
     })
 })
