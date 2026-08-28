@@ -71,10 +71,10 @@ The system MUST keep all upstream attempts behind a shared pacing gate of approx
 - **THEN** their attempts remain serialized through the configured pacing gate
 
 ### Requirement: Tenrai-Aware Rate-Limit Retry
-The system MUST retry HTTP 429 responses using bounded retry behavior and MUST honor a valid server-provided `Retry-After` delay when present.
+The system MUST apply bounded retry behavior to HTTP 429 responses, MUST support valid integer-seconds and HTTP-date `Retry-After` values, and MUST honor a valid server-provided delay whenever the response is retried inline. Excessive valid delays are governed by the operational cooldown requirement below.
 
-#### Scenario: 429 with Retry-After
-- **WHEN** Tenrai responds with HTTP 429 and a valid `Retry-After` header
+#### Scenario: 429 with a normal Retry-After
+- **WHEN** Tenrai responds with HTTP 429 and a valid integer-seconds or HTTP-date `Retry-After` delay at or below the configured inline-wait ceiling
 - **THEN** the next retry waits at least the server-requested duration
 - **AND** the request remains subject to the configured maximum retry attempts
 
@@ -85,6 +85,25 @@ The system MUST retry HTTP 429 responses using bounded retry behavior and MUST h
 #### Scenario: Other transient failures
 - **WHEN** Tenrai responds with HTTP 5xx, a timeout, or a transient transport failure
 - **THEN** the existing bounded retry policy remains in effect
+
+### Requirement: Operationally Bounded Provider Cooldown
+The system MUST expose a provider-neutral maximum inline `Retry-After` wait through `anime-data.max-inline-retry-after-ms` and SHALL default it to 60000 milliseconds. A valid `Retry-After` delay exceeding that ceiling MUST NOT be slept inline indefinitely or clamped into an early retry; the client MUST record a process-local provider cooldown through the provider-requested expiry, fail the current operation, and defer another upstream attempt until that cooldown expires.
+
+#### Scenario: Excessive Retry-After is deferred
+- **WHEN** Tenrai responds with HTTP 429 and a valid `Retry-After` delay greater than the configured inline-wait ceiling
+- **THEN** the client does not sleep for the full excessive duration
+- **AND** the client does not retry before the provider-requested cooldown expires
+- **AND** the current operation fails or is deferred with an operationally useful error without exposing the response body
+- **AND** an active refresh preserves its last known-good cache because no candidate is published
+
+#### Scenario: Active provider cooldown blocks subsequent calls
+- **WHEN** a subsequent anime-data call occurs before an excessive `Retry-After` cooldown expires
+- **THEN** the client fails or is deferred before pacing or making another upstream request
+- **AND** it reports the cooldown expiry without exposing credentials or response details
+
+#### Scenario: Provider cooldown recovery
+- **WHEN** a subsequent anime-data call occurs after the recorded provider cooldown expires
+- **THEN** the client clears the expired cooldown and may make a normally paced upstream request
 
 ### Requirement: Existing Cache and Public API Compatibility
 The migration MUST NOT require a cache-schema migration and MUST NOT change Seasonal Seiyuu's public/admin endpoint paths or response contracts solely because the upstream provider changed.

@@ -30,7 +30,7 @@ function AboutPage() {
                     <p className="section-number">03 / PROVENANCE</p>
                     <h2 id="provenance-heading">Built from public credits.</h2>
                     <p>
-                        Seasonal and career records are sourced through <a href="https://api.tenrai.org/v1" target="_blank" rel="noopener noreferrer">Tenrai v1 API <span aria-hidden="true">↗</span><span className="sr-only"> (external)</span></a>, a public API for MyAnimeList-derived anime, person, and character records. External links take you to the underlying MyAnimeList pages for actors, anime, and characters.
+                        Seasonal and career records are sourced through <a href="https://tenrai.org/" target="_blank" rel="noopener noreferrer">Tenrai v1 API <span aria-hidden="true">↗</span><span className="sr-only"> (external)</span></a>, a public API for MyAnimeList-derived anime, person, and character records. External links take you to the underlying MyAnimeList pages for actors, anime, and characters.
                     </p>
                 </section>
 

@@ -11,7 +11,7 @@
 - [x] 2.2 Preserve anime cast lookup against `/anime/{id}/characters`, Japanese-language voice-actor filtering, and extraction of character/person MAL IDs, names, roles, and images.
 - [x] 2.3 Preserve person career-role lookup against `/people/{id}/voices` and mapping to existing `Anime`, `Character`, and `Role` domain records.
 - [x] 2.4 Keep the shared approximately one-request-per-second pacing gate and existing retry categories for 429, 5xx, timeout, and transport failures.
-- [x] 2.5 On HTTP 429, honor a valid Tenrai `Retry-After` header by waiting at least the requested duration before retrying; fall back to bounded exponential backoff with jitter when the header is absent/invalid.
+- [x] 2.5 On HTTP 429, support integer-seconds and HTTP-date `Retry-After` values, honor normal delays inline, and defer excessive delays through a provider cooldown rather than sleeping indefinitely or retrying early; fall back to bounded exponential backoff with jitter when the header is absent/invalid.
 - [x] 2.6 Do not add Tenrai authentication/server-key handling unless current unauthenticated live validation demonstrates a concrete requirement.
 
 ## 3. Contract and Reliability Tests
@@ -19,7 +19,7 @@
 - [x] 3.1 Rename `JikanApiServiceTest` and provider-specific test descriptions to match the neutral client while retaining MockWebServer isolation.
 - [x] 3.2 Retain or rename the existing Jikan-shaped JSON fixtures as Tenrai-v1 compatibility contract fixtures; change payload structure only where live Tenrai behavior proves a difference.
 - [x] 3.3 Verify deterministic tests cover current-season parsing/pagination/completeness, Japanese cast filtering, person roles, successful empty arrays, malformed payloads, incomplete pagination, non-retryable 4xx, 429/5xx retry, exhausted attempts, timeout/connection failure, and pacing.
-- [x] 3.4 Add deterministic tests for valid `Retry-After` handling and invalid/missing-header fallback without making the test suite depend on real elapsed multi-second waits where avoidable.
+- [x] 3.4 Add deterministic tests for normal integer/date `Retry-After` handling, excessive-delay deferral and cooldown blocking/recovery, interruption, and invalid/missing-header fallback without making the test suite depend on real elapsed multi-second waits.
 - [x] 3.5 Keep normal backend tests fully offline and deterministic.
 
 ## 4. Live Tenrai Compatibility Smoke
@@ -32,7 +32,7 @@
 
 ## 5. Attribution, Configuration, and Project Documentation
 
-- [x] 5.1 Update `README.md` data-source, tech-stack, refresh, rate-limit, configuration, rollout, and troubleshooting references from Jikan to Tenrai where they describe the current provider.
+- [x] 5.1 Update `README.md` data-source, tech-stack, refresh, rate-limit, configuration, rollout, and troubleshooting references from Jikan to Tenrai where they describe the current provider, including the configurable inline `Retry-After` ceiling and cooldown semantics.
 - [x] 5.2 Update `openspec/config.yaml` and `AGENTS.md` so future agents preserve Tenrai/provider rate limits and provider-neutral integration boundaries rather than Jikan-specific assumptions.
 - [x] 5.3 Update the About page provenance copy/link to identify Tenrai as the API provider and MyAnimeList as the underlying data source.
 - [x] 5.4 Update the Footer attribution/link consistently.

@@ -15,7 +15,7 @@ describe('AboutPage', () => {
         render(<AboutPage />)
 
         const tenraiLink = screen.getByRole('link', { name: 'Tenrai v1 API (external)' })
-        expect(tenraiLink).toHaveAttribute('href', 'https://api.tenrai.org/v1')
+        expect(tenraiLink).toHaveAttribute('href', 'https://tenrai.org/')
         expect(tenraiLink).toHaveAttribute('target', '_blank')
         expect(screen.getByText(/React 19 · TypeScript · Vite/)).toBeInTheDocument()
         expect(screen.getByText(/MyAnimeList-derived/)).toBeInTheDocument()

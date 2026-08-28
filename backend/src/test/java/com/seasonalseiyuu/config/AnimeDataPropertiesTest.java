@@ -13,5 +13,6 @@ class AnimeDataPropertiesTest {
         assertThat(properties.getRateLimitMs()).isEqualTo(1000);
         assertThat(properties.getConnectTimeoutMs()).isEqualTo(10000);
         assertThat(properties.getReadTimeoutMs()).isEqualTo(30000);
+        assertThat(properties.getMaxInlineRetryAfterMs()).isEqualTo(60_000);
     }
 }

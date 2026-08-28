@@ -9,6 +9,7 @@ public class AnimeDataProperties {
     private long rateLimitMs = 1000;
     private int connectTimeoutMs = 10000;
     private int readTimeoutMs = 30000;
+    private long maxInlineRetryAfterMs = 60_000;
 
     public String getBaseUrl() { return baseUrl; }
     public void setBaseUrl(String baseUrl) { this.baseUrl = baseUrl; }
@@ -18,4 +19,6 @@ public class AnimeDataProperties {
     public void setConnectTimeoutMs(int connectTimeoutMs) { this.connectTimeoutMs = connectTimeoutMs; }
     public int getReadTimeoutMs() { return readTimeoutMs; }
     public void setReadTimeoutMs(int readTimeoutMs) { this.readTimeoutMs = readTimeoutMs; }
+    public long getMaxInlineRetryAfterMs() { return maxInlineRetryAfterMs; }
+    public void setMaxInlineRetryAfterMs(long maxInlineRetryAfterMs) { this.maxInlineRetryAfterMs = maxInlineRetryAfterMs; }
 }

@@ -13,7 +13,7 @@ describe('Footer', () => {
         render(<Footer />)
 
         const tenraiLink = screen.getByRole('link', { name: /Tenrai v1 API/ })
-        expect(tenraiLink).toHaveAttribute('href', 'https://api.tenrai.org/v1')
+        expect(tenraiLink).toHaveAttribute('href', 'https://tenrai.org/')
         expect(tenraiLink).toHaveAttribute('target', '_blank')
     })
 })

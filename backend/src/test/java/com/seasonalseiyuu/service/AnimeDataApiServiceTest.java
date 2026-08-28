@@ -15,6 +15,13 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -229,6 +236,84 @@ class AnimeDataApiServiceTest {
     }
 
     @Test
+    void fetchWithRetry_honorsRetryAfterHttpDate() throws IOException {
+        Instant now = Instant.parse("2026-01-01T00:00:00Z");
+        String retryAt = DateTimeFormatter.RFC_1123_DATE_TIME.format(
+                ZonedDateTime.ofInstant(now.plusSeconds(3), ZoneOffset.UTC));
+        List<Long> delays = new ArrayList<>();
+        mockWebServer.enqueue(new MockResponse().setResponseCode(429).setHeader("Retry-After", retryAt));
+        mockWebServer.enqueue(new MockResponse()
+                .setBody(loadFixture("person-voices-response.json"))
+                .setHeader("Content-Type", "application/json"));
+        AnimeDataApiService client = newClientWithSleeper(
+                delays, 37, 60_000, Clock.fixed(now, ZoneOffset.UTC));
+
+        assertEquals(3, client.getPersonVoiceRoles(2001).size());
+        assertEquals(List.of(3_000L), delays);
+    }
+
+    @Test
+    void fetchWithRetry_defersExcessiveRetryAfterWithoutSleeping() {
+        List<Long> delays = new ArrayList<>();
+        mockWebServer.enqueue(new MockResponse().setResponseCode(429).setHeader("Retry-After", "86400"));
+        AnimeDataApiService client = newClientWithSleeper(
+                delays, 37, 60_000, Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC));
+
+        AnimeDataApiException failure = assertThrows(AnimeDataApiException.class,
+                () -> client.getPersonVoiceRoles(2001));
+
+        assertTrue(failure.getMessage().contains("operation deferred until"));
+        assertTrue(delays.isEmpty(), "an excessive Retry-After must not be slept inline");
+        assertEquals(1, mockWebServer.getRequestCount());
+    }
+
+    @Test
+    void fetchWithRetry_defersVeryLargeValidIntegerRetryAfterWithoutOverflow() {
+        List<Long> delays = new ArrayList<>();
+        mockWebServer.enqueue(new MockResponse().setResponseCode(429)
+                .setHeader("Retry-After", "9223372036854775808"));
+        AnimeDataApiService client = newClientWithSleeper(
+                delays, 37, 60_000, Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC));
+
+        AnimeDataApiException failure = assertThrows(AnimeDataApiException.class,
+                () -> client.getPersonVoiceRoles(2001));
+
+        assertTrue(failure.getMessage().contains("operation deferred until"));
+        assertTrue(delays.isEmpty(), "a very large valid Retry-After must not be slept inline");
+        assertEquals(1, mockWebServer.getRequestCount());
+    }
+
+    @Test
+    void fetchWithRetry_doesNotBypassActiveProviderCooldown() {
+        MutableClock clock = new MutableClock(Instant.parse("2026-01-01T00:00:00Z"));
+        mockWebServer.enqueue(new MockResponse().setResponseCode(429).setHeader("Retry-After", "120"));
+        AnimeDataApiService client = newClientWithSleeper(new ArrayList<>(), 37, 10_000, clock);
+
+        assertThrows(AnimeDataApiException.class, () -> client.getPersonVoiceRoles(2001));
+        AnimeDataApiException failure = assertThrows(AnimeDataApiException.class,
+                () -> client.getPersonVoiceRoles(2001));
+
+        assertTrue(failure.getMessage().contains("cooldown is active"));
+        assertEquals(1, mockWebServer.getRequestCount(), "active cooldown must prevent another upstream request");
+    }
+
+    @Test
+    void fetchWithRetry_recoversAfterProviderCooldownExpires() throws IOException {
+        MutableClock clock = new MutableClock(Instant.parse("2026-01-01T00:00:00Z"));
+        mockWebServer.enqueue(new MockResponse().setResponseCode(429).setHeader("Retry-After", "120"));
+        mockWebServer.enqueue(new MockResponse()
+                .setBody(loadFixture("person-voices-response.json"))
+                .setHeader("Content-Type", "application/json"));
+        AnimeDataApiService client = newClientWithSleeper(new ArrayList<>(), 37, 10_000, clock);
+
+        assertThrows(AnimeDataApiException.class, () -> client.getPersonVoiceRoles(2001));
+        clock.advance(Duration.ofSeconds(120));
+
+        assertEquals(3, client.getPersonVoiceRoles(2001).size());
+        assertEquals(2, mockWebServer.getRequestCount());
+    }
+
+    @Test
     void fetchWithRetry_fallsBackForInvalidRetryAfter() throws IOException {
         List<Long> delays = new ArrayList<>();
         mockWebServer.enqueue(new MockResponse().setResponseCode(429).setHeader("Retry-After", "later"));
@@ -344,6 +429,25 @@ class AnimeDataApiServiceTest {
     }
 
     @Test
+    void interruptedRetrySleepRestoresInterruptFlagAndFailsCleanly() {
+        mockWebServer.enqueue(new MockResponse().setResponseCode(503));
+        AnimeDataApiService interruptedClient = new AnimeDataApiService(
+                mockWebServer.url("/").toString(), 0, new ObjectMapper(),
+                1_000, 1_000, 2, 37, 100, 0, 60_000,
+                millis -> { throw new InterruptedException("test interruption"); },
+                Clock.fixed(Instant.parse("2026-01-01T00:00:00Z"), ZoneOffset.UTC));
+
+        try {
+            AnimeDataApiException failure = assertThrows(AnimeDataApiException.class,
+                    () -> interruptedClient.getPersonVoiceRoles(2001));
+            assertEquals("Anime-data request interrupted", failure.getMessage());
+            assertTrue(Thread.currentThread().isInterrupted());
+        } finally {
+            Thread.interrupted();
+        }
+    }
+
+    @Test
     void consecutiveRequestsRemainPaced() {
         mockWebServer.enqueue(new MockResponse().setBody("{\"data\":[]}"));
         mockWebServer.enqueue(new MockResponse().setBody("{\"data\":[]}"));
@@ -364,8 +468,30 @@ class AnimeDataApiServiceTest {
     }
 
     private AnimeDataApiService newClientWithSleeper(List<Long> delays, long initialBackoffMs) {
+        return newClientWithSleeper(delays, initialBackoffMs, 60_000, Clock.systemUTC());
+    }
+
+    private AnimeDataApiService newClientWithSleeper(List<Long> delays, long initialBackoffMs,
+                                                     long maxInlineRetryAfterMs, Clock clock) {
         return new AnimeDataApiService(mockWebServer.url("/").toString(), 0, new ObjectMapper(),
-                1_000, 1_000, 2, initialBackoffMs, 100, 0,
-                millis -> delays.add(millis));
+                1_000, 1_000, 2, initialBackoffMs, 100, 0, maxInlineRetryAfterMs,
+                millis -> delays.add(millis), clock);
+    }
+
+    private static final class MutableClock extends Clock {
+        private Instant current;
+
+        private MutableClock(Instant current) { this.current = current; }
+
+        @Override
+        public ZoneId getZone() { return ZoneOffset.UTC; }
+
+        @Override
+        public Clock withZone(ZoneId zone) { return this; }
+
+        @Override
+        public Instant instant() { return current; }
+
+        private void advance(Duration amount) { current = current.plus(amount); }
     }
 }

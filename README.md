@@ -12,7 +12,7 @@ The live version of the app is normally accessible here: https://www.vergo.moe/s
 
 ## Data source
 
-Seasonal Seiyuu uses the public [Tenrai v1 API](https://api.tenrai.org/v1) to fetch anime, character, season, and voice-actor data. Tenrai serves records derived from [MyAnimeList](https://myanimelist.net/), which remains the identity source for the catalogue and the destination for entity links.
+Seasonal Seiyuu uses the public [Tenrai v1 API](https://tenrai.org/) to fetch anime, character, season, and voice-actor data. Tenrai serves records derived from [MyAnimeList](https://myanimelist.net/), which remains the identity source for the catalogue and the destination for entity links.
 
 ## Tech Stack
 
@@ -200,7 +200,7 @@ curl -X POST -H "X-API-Key: $ADMIN_API_KEY" http://localhost:8080/seiyuu/api/adm
 
 **Note**: Refresh takes ~10-15 minutes due to API rate limiting.
 
-Transient Tenrai rate-limit responses honor a valid `Retry-After` delay; other transient failures use the bounded backoff and jitter settings above. Public requests read the local cache and do not consume the upstream request budget.
+Transient Tenrai rate-limit responses honor a valid `Retry-After` delay. Delays up to the configured inline ceiling are waited before retrying; an excessive valid delay records the provider cooldown and fails the current refresh, deferring subsequent attempts instead of blocking the refresh thread indefinitely or retrying early. Subsequent attempts respect that cooldown, while the last known-good cache remains active. Other transient failures use the bounded backoff and jitter settings above. Public requests read the local cache and do not consume the upstream request budget.
 
 The refresh is **resumable** - if it fails mid-way, trigger it again and it picks up compatible progress. A failed attempt never replaces the last known-good cache.
 
@@ -226,6 +226,7 @@ Automatic scheduling is disabled by default. Enable it only after the rollout be
 | `ANIME_DATA_RATE_LIMIT_MS` | `1000` | Minimum spacing between all Tenrai attempts |
 | `ANIME_DATA_CONNECT_TIMEOUT_MS` | `10000` | Upstream connection timeout |
 | `ANIME_DATA_READ_TIMEOUT_MS` | `30000` | Upstream response timeout |
+| `ANIME_DATA_MAX_INLINE_RETRY_AFTER_MS` | `60000` | Maximum valid `Retry-After` delay slept inline; larger delays fail the current operation and enforce the provider cooldown until it expires |
 
 ### One-time production rollout
 
