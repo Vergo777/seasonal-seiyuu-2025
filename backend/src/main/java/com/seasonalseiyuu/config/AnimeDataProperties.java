@@ -2,10 +2,10 @@ package com.seasonalseiyuu.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/** Typed Jikan endpoint and pacing settings. */
-@ConfigurationProperties(prefix = "jikan")
-public class JikanProperties {
-    private String baseUrl = "https://api.jikan.moe/v4";
+/** Typed provider-neutral anime-data endpoint and pacing settings. */
+@ConfigurationProperties(prefix = "anime-data")
+public class AnimeDataProperties {
+    private String baseUrl = "https://api.tenrai.org/v1";
     private long rateLimitMs = 1000;
     private int connectTimeoutMs = 10000;
     private int readTimeoutMs = 30000;

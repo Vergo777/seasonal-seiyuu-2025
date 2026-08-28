@@ -3,8 +3,9 @@ package com.seasonalseiyuu.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.seasonalseiyuu.model.Anime;
 import com.seasonalseiyuu.model.Role;
-import com.seasonalseiyuu.service.JikanApiService.CharacterVoiceActor;
-import com.seasonalseiyuu.service.JikanApiService.SeasonAnimeResult;
+import com.seasonalseiyuu.service.AnimeDataApiService.AnimeDataApiException;
+import com.seasonalseiyuu.service.AnimeDataApiService.CharacterVoiceActor;
+import com.seasonalseiyuu.service.AnimeDataApiService.SeasonAnimeResult;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
@@ -14,19 +15,20 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for JikanApiService.
- * Uses MockWebServer to simulate Jikan API responses.
+ * Unit tests for AnimeDataApiService.
+ * Uses MockWebServer to simulate anime-data provider responses.
  */
-class JikanApiServiceTest {
+class AnimeDataApiServiceTest {
 
     private MockWebServer mockWebServer;
-    private JikanApiService jikanApiService;
+    private AnimeDataApiService animeDataApiService;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -34,7 +36,7 @@ class JikanApiServiceTest {
         mockWebServer.start();
 
         String baseUrl = mockWebServer.url("/").toString();
-        jikanApiService = new JikanApiService(baseUrl, 10, new ObjectMapper()); // 10ms rate limit for fast tests
+        animeDataApiService = new AnimeDataApiService(baseUrl, 10, new ObjectMapper()); // 10ms rate limit for fast tests
     }
 
     @AfterEach
@@ -51,7 +53,7 @@ class JikanApiServiceTest {
                 .setHeader("Content-Type", "application/json"));
 
         // When
-        SeasonAnimeResult result = jikanApiService.getCurrentSeasonAnime();
+        SeasonAnimeResult result = animeDataApiService.getCurrentSeasonAnime();
 
         // Then
         assertEquals(3, result.anime().size());
@@ -76,7 +78,7 @@ class JikanApiServiceTest {
         mockWebServer.enqueue(new MockResponse().setBody(page2).setHeader("Content-Type", "application/json"));
 
         // When
-        SeasonAnimeResult result = jikanApiService.getCurrentSeasonAnime();
+        SeasonAnimeResult result = animeDataApiService.getCurrentSeasonAnime();
 
         // Then
         assertEquals(2, result.anime().size());
@@ -92,7 +94,7 @@ class JikanApiServiceTest {
         mockWebServer.enqueue(new MockResponse().setBody(response).setHeader("Content-Type", "application/json"));
 
         // When
-        SeasonAnimeResult result = jikanApiService.getCurrentSeasonAnime();
+        SeasonAnimeResult result = animeDataApiService.getCurrentSeasonAnime();
 
         // Then
         assertEquals(2, result.anime().size());
@@ -109,7 +111,7 @@ class JikanApiServiceTest {
                 .setHeader("Content-Type", "application/json"));
 
         // When
-        List<CharacterVoiceActor> results = jikanApiService.getAnimeCharacters(12345);
+        List<CharacterVoiceActor> results = animeDataApiService.getAnimeCharacters(12345);
 
         // Then
         assertEquals(2, results.size(), "Should have 2 Japanese VAs (English VA filtered out)");
@@ -131,7 +133,7 @@ class JikanApiServiceTest {
                 .setHeader("Content-Type", "application/json"));
 
         // When
-        List<CharacterVoiceActor> results = jikanApiService.getAnimeCharacters(12345);
+        List<CharacterVoiceActor> results = animeDataApiService.getAnimeCharacters(12345);
 
         // Then - fixture has 1 English VA per character, should be filtered
         for (CharacterVoiceActor cva : results) {
@@ -146,8 +148,8 @@ class JikanApiServiceTest {
         // Given - Server returns error
         mockWebServer.enqueue(new MockResponse().setResponseCode(500));
 
-        assertThrows(JikanApiService.JikanApiException.class,
-                () -> jikanApiService.getAnimeCharacters(12345));
+        assertThrows(AnimeDataApiException.class,
+                () -> animeDataApiService.getAnimeCharacters(12345));
     }
 
     @Test
@@ -159,7 +161,7 @@ class JikanApiServiceTest {
                 .setHeader("Content-Type", "application/json"));
 
         // When
-        List<Role> roles = jikanApiService.getPersonVoiceRoles(2001);
+        List<Role> roles = animeDataApiService.getPersonVoiceRoles(2001);
 
         // Then
         assertEquals(3, roles.size());
@@ -176,8 +178,25 @@ class JikanApiServiceTest {
         // Given
         mockWebServer.enqueue(new MockResponse().setResponseCode(404));
 
-        assertThrows(JikanApiService.JikanApiException.class,
-                () -> jikanApiService.getPersonVoiceRoles(9999));
+        assertThrows(AnimeDataApiException.class,
+                () -> animeDataApiService.getPersonVoiceRoles(9999));
+    }
+
+    @Test
+    void getPersonVoiceRoles_acceptsSuccessfulEmptyData() {
+        mockWebServer.enqueue(new MockResponse().setBody("{\"data\":[]}")
+                .setHeader("Content-Type", "application/json"));
+
+        assertTrue(animeDataApiService.getPersonVoiceRoles(2001).isEmpty());
+    }
+
+    @Test
+    void getPersonVoiceRoles_rejectsMalformedPayload() {
+        mockWebServer.enqueue(new MockResponse().setBody("{\"meta\":{}}")
+                .setHeader("Content-Type", "application/json"));
+
+        assertThrows(AnimeDataApiException.class,
+                () -> animeDataApiService.getPersonVoiceRoles(2001));
     }
 
     @Test
@@ -189,11 +208,50 @@ class JikanApiServiceTest {
                 .setHeader("Content-Type", "application/json"));
 
         // When
-        List<Role> roles = jikanApiService.getPersonVoiceRoles(2001);
+        List<Role> roles = animeDataApiService.getPersonVoiceRoles(2001);
 
         // Then
         assertEquals(3, roles.size(), "Should succeed after retry");
         assertEquals(2, mockWebServer.getRequestCount(), "Should have made 2 requests");
+    }
+
+    @Test
+    void fetchWithRetry_honorsRetryAfterSeconds() throws IOException {
+        List<Long> delays = new ArrayList<>();
+        mockWebServer.enqueue(new MockResponse().setResponseCode(429).setHeader("Retry-After", "2"));
+        mockWebServer.enqueue(new MockResponse()
+                .setBody(loadFixture("person-voices-response.json"))
+                .setHeader("Content-Type", "application/json"));
+        AnimeDataApiService client = newClientWithSleeper(delays, 37);
+
+        assertEquals(3, client.getPersonVoiceRoles(2001).size());
+        assertEquals(List.of(2_000L), delays);
+    }
+
+    @Test
+    void fetchWithRetry_fallsBackForInvalidRetryAfter() throws IOException {
+        List<Long> delays = new ArrayList<>();
+        mockWebServer.enqueue(new MockResponse().setResponseCode(429).setHeader("Retry-After", "later"));
+        mockWebServer.enqueue(new MockResponse()
+                .setBody(loadFixture("person-voices-response.json"))
+                .setHeader("Content-Type", "application/json"));
+        AnimeDataApiService client = newClientWithSleeper(delays, 37);
+
+        assertEquals(3, client.getPersonVoiceRoles(2001).size());
+        assertEquals(List.of(37L), delays);
+    }
+
+    @Test
+    void fetchWithRetry_fallsBackWhenRetryAfterIsMissing() throws IOException {
+        List<Long> delays = new ArrayList<>();
+        mockWebServer.enqueue(new MockResponse().setResponseCode(429));
+        mockWebServer.enqueue(new MockResponse()
+                .setBody(loadFixture("person-voices-response.json"))
+                .setHeader("Content-Type", "application/json"));
+        AnimeDataApiService client = newClientWithSleeper(delays, 37);
+
+        assertEquals(3, client.getPersonVoiceRoles(2001).size());
+        assertEquals(List.of(37L), delays);
     }
 
     @Test
@@ -202,7 +260,7 @@ class JikanApiServiceTest {
         mockWebServer.enqueue(new MockResponse().setBody(loadFixture("person-voices-response.json"))
                 .setHeader("Content-Type", "application/json"));
 
-        assertEquals(3, jikanApiService.getPersonVoiceRoles(2001).size());
+        assertEquals(3, animeDataApiService.getPersonVoiceRoles(2001).size());
         assertEquals(2, mockWebServer.getRequestCount());
     }
 
@@ -212,8 +270,8 @@ class JikanApiServiceTest {
         mockWebServer.enqueue(new MockResponse().setResponseCode(500));
         mockWebServer.enqueue(new MockResponse().setResponseCode(500));
 
-        assertThrows(JikanApiService.JikanApiException.class,
-                () -> jikanApiService.getPersonVoiceRoles(2001));
+        assertThrows(AnimeDataApiException.class,
+                () -> animeDataApiService.getPersonVoiceRoles(2001));
         assertEquals(3, mockWebServer.getRequestCount());
     }
 
@@ -221,8 +279,8 @@ class JikanApiServiceTest {
     void nonRetryableClientErrorIsExplicitAndNotRetried() {
         mockWebServer.enqueue(new MockResponse().setResponseCode(404));
 
-        assertThrows(JikanApiService.JikanApiException.class,
-                () -> jikanApiService.getPersonVoiceRoles(2001));
+        assertThrows(AnimeDataApiException.class,
+                () -> animeDataApiService.getPersonVoiceRoles(2001));
         assertEquals(1, mockWebServer.getRequestCount());
     }
 
@@ -231,7 +289,7 @@ class JikanApiServiceTest {
         mockWebServer.enqueue(new MockResponse().setBody("{\"data\":[]}")
                 .setHeader("Content-Type", "application/json"));
 
-        assertTrue(jikanApiService.getAnimeCharacters(12345).isEmpty());
+        assertTrue(animeDataApiService.getAnimeCharacters(12345).isEmpty());
     }
 
     @Test
@@ -239,8 +297,8 @@ class JikanApiServiceTest {
         mockWebServer.enqueue(new MockResponse().setBody("not-json")
                 .setHeader("Content-Type", "application/json"));
 
-        assertThrows(JikanApiService.JikanApiException.class,
-                () -> jikanApiService.getAnimeCharacters(12345));
+        assertThrows(AnimeDataApiException.class,
+                () -> animeDataApiService.getAnimeCharacters(12345));
     }
 
     @Test
@@ -251,27 +309,37 @@ class JikanApiServiceTest {
         mockWebServer.enqueue(new MockResponse().setBody("{\"data\":[]}")
                 .setHeader("Content-Type", "application/json"));
 
-        assertThrows(JikanApiService.JikanApiException.class,
-                () -> jikanApiService.getCurrentSeasonAnime());
+        assertThrows(AnimeDataApiException.class,
+                () -> animeDataApiService.getCurrentSeasonAnime());
+    }
+
+    @Test
+    void missingPaginationContinuationIsExplicitlyRejected() {
+        mockWebServer.enqueue(new MockResponse().setBody(
+                "{\"data\":[],\"pagination\":{\"items\":{\"total\":0}}}")
+                .setHeader("Content-Type", "application/json"));
+
+        assertThrows(AnimeDataApiException.class,
+                () -> animeDataApiService.getCurrentSeasonAnime());
     }
 
     @Test
     void timeoutIsExplicitlyRejected() {
         mockWebServer.enqueue(new MockResponse().setBody("{\"data\":[]}")
                 .setBodyDelay(100, TimeUnit.MILLISECONDS));
-        JikanApiService shortTimeoutClient = new JikanApiService(mockWebServer.url("/").toString(), 0,
+        AnimeDataApiService shortTimeoutClient = new AnimeDataApiService(mockWebServer.url("/").toString(), 0,
                 new ObjectMapper(), 100, 20, 1, 0, 0, 0);
 
-        assertThrows(JikanApiService.JikanApiException.class,
+        assertThrows(AnimeDataApiException.class,
                 () -> shortTimeoutClient.getAnimeCharacters(12345));
     }
 
     @Test
     void connectionFailureIsExplicitlyRejected() {
-        JikanApiService unavailableClient = new JikanApiService("http://127.0.0.1:1", 0,
+        AnimeDataApiService unavailableClient = new AnimeDataApiService("http://127.0.0.1:1", 0,
                 new ObjectMapper(), 100, 100, 1, 0, 0, 0);
 
-        assertThrows(JikanApiService.JikanApiException.class,
+        assertThrows(AnimeDataApiException.class,
                 () -> unavailableClient.getAnimeCharacters(12345));
     }
 
@@ -281,8 +349,8 @@ class JikanApiServiceTest {
         mockWebServer.enqueue(new MockResponse().setBody("{\"data\":[]}"));
         long started = System.nanoTime();
 
-        jikanApiService.getAnimeCharacters(12345);
-        jikanApiService.getAnimeCharacters(12345);
+        animeDataApiService.getAnimeCharacters(12345);
+        animeDataApiService.getAnimeCharacters(12345);
 
         long elapsedMillis = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started);
         assertTrue(elapsedMillis >= 8, "requests should remain behind the pacing gate");
@@ -293,5 +361,11 @@ class JikanApiServiceTest {
     private String loadFixture(String filename) throws IOException {
         Path path = Path.of("src/test/resources/fixtures", filename);
         return Files.readString(path);
+    }
+
+    private AnimeDataApiService newClientWithSleeper(List<Long> delays, long initialBackoffMs) {
+        return new AnimeDataApiService(mockWebServer.url("/").toString(), 0, new ObjectMapper(),
+                1_000, 1_000, 2, initialBackoffMs, 100, 0,
+                millis -> delays.add(millis));
     }
 }

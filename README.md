@@ -12,14 +12,14 @@ The live version of the app is normally accessible here: https://www.vergo.moe/s
 
 ## Data source
 
-Seasonal Seiyuu makes use of the incredible [Jikan API](https://docs.jikan.moe/) to fetch all related information from MAL.
+Seasonal Seiyuu uses the public [Tenrai v1 API](https://api.tenrai.org/v1) to fetch anime, character, season, and voice-actor data. Tenrai serves records derived from [MyAnimeList](https://myanimelist.net/), which remains the identity source for the catalogue and the destination for entity links.
 
 ## Tech Stack
 
 - **Backend**: Spring Boot 3.5.5 + Java 25 + Gradle 9.1.0
 - **Frontend**: React 19 + TypeScript + Vite (built to `backend/src/main/resources/static/`)
 - **Testing**: Vitest + React Testing Library + Playwright smoke tests (frontend), JUnit 5 + MockWebServer (backend)
-- **Data**: Jikan API v4 (MyAnimeList) → cached to local JSON file
+- **Data**: Tenrai v1 API (MyAnimeList-derived records) → cached to local JSON file
 
 ## Frontend experience
 
@@ -91,6 +91,17 @@ cd ../backend
 ```
 
 > **Note**: The app runs under the `/seiyuu` context path locally and in production.
+
+### Tenrai compatibility smoke
+
+The live compatibility check is opt-in and makes read-only requests to the public Tenrai v1 API. It requires no credentials and is not part of the normal offline test suite:
+
+```bash
+cd backend
+TENRAI_LIVE_SMOKE=true ./gradlew test --tests '*AnimeDataLiveSmokeTest'
+```
+
+The smoke checks current-season pagination, Japanese cast extraction for MAL anime `5114`, and career-role mapping for MAL person `1`. It keeps the normal one-second upstream pacing, so allow several seconds for the current-season pages.
 
 ---
 
@@ -189,6 +200,8 @@ curl -X POST -H "X-API-Key: $ADMIN_API_KEY" http://localhost:8080/seiyuu/api/adm
 
 **Note**: Refresh takes ~10-15 minutes due to API rate limiting.
 
+Transient Tenrai rate-limit responses honor a valid `Retry-After` delay; other transient failures use the bounded backoff and jitter settings above. Public requests read the local cache and do not consume the upstream request budget.
+
 The refresh is **resumable** - if it fails mid-way, trigger it again and it picks up compatible progress. A failed attempt never replaces the last known-good cache.
 
 Automatic scheduling is disabled by default. Enable it only after the rollout below has been validated. The scheduler runs inside the Spring process, uses UTC by default, performs a delayed stale-cache catch-up after startup, and shares the same single-flight entry point as the manual endpoint.
@@ -200,20 +213,28 @@ Automatic scheduling is disabled by default. Enable it only after the rollout be
 | `REFRESH_ZONE` | `UTC` | Scheduler time zone |
 | `REFRESH_STARTUP_DELAY` | `15s` | Delay before startup catch-up checks cache freshness |
 | `REFRESH_FRESHNESS_THRESHOLD` | `24h` | Age at which startup catch-up considers the cache stale |
-| `REFRESH_RETRY_MAX_ATTEMPTS` | `5` | Maximum attempts for transient Jikan failures |
+| `REFRESH_RETRY_MAX_ATTEMPTS` | `5` | Maximum attempts for transient anime-data provider failures |
 | `REFRESH_RETRY_INITIAL_BACKOFF` | `1s` | Initial transient retry delay |
 | `REFRESH_RETRY_MAX_BACKOFF` | `30s` | Retry delay ceiling |
 | `REFRESH_RETRY_JITTER` | `250ms` | Random delay added to retries |
-| `JIKAN_RATE_LIMIT_MS` | `1000` | Minimum spacing between all Jikan attempts |
+
+### Anime-data provider settings
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `ANIME_DATA_BASE_URL` | `https://api.tenrai.org/v1` | Upstream anime-data provider base URL |
+| `ANIME_DATA_RATE_LIMIT_MS` | `1000` | Minimum spacing between all Tenrai attempts |
+| `ANIME_DATA_CONNECT_TIMEOUT_MS` | `10000` | Upstream connection timeout |
+| `ANIME_DATA_READ_TIMEOUT_MS` | `30000` | Upstream response timeout |
 
 ### One-time production rollout
 
 1. Deploy with `REFRESH_ENABLED=false` and verify the existing cache loads, the public season-info response remains compatible, and the authenticated status endpoint is reachable.
-2. Trigger one manual refresh. Inspect the status response and logs for staged promotion, a successful `lastSuccess`, the detected active season, and any incomplete-anime count.
+2. Trigger one manual refresh against Tenrai. Inspect the status response and logs for staged promotion, a successful `lastSuccess`, the detected active season, and any incomplete-anime count.
 3. Enable `REFRESH_ENABLED=true` in the protected service environment and restart once. Startup catch-up will run only when the cache is missing or older than the freshness threshold; the daily cron handles later reconciliation.
 4. Confirm `GET /seiyuu/api/season-info` reports the expected active season and last-success health, then leave the scheduler enabled.
 
-If an automated run fails, the failure summary and `lastAttempt` are persisted in `data/refresh-health.json`; the active `data/season-cache.json` remains available and `refresh-progress.json` remains for a compatible retry. Use the authenticated manual endpoint as an override. To roll back, set `REFRESH_ENABLED=false` and restart; retain the active cache. A previous application version can ignore newer progress/health files while continuing to read the cache.
+If an automated Tenrai run fails, the failure summary and `lastAttempt` are persisted in `data/refresh-health.json`; the active `data/season-cache.json` remains available and `refresh-progress.json` remains for a compatible retry. Use the authenticated manual endpoint as an override. To roll back, set `REFRESH_ENABLED=false` and restart; retain the active cache. A previous application version can ignore newer progress/health files while continuing to read the cache.
 
 ---
 

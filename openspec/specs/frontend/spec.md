@@ -148,7 +148,7 @@ The system SHALL present a consistent application shell and route-aware document
 - **THEN** a skip link is available to move focus directly to the main content
 
 #### Scenario: External destination
-- **WHEN** a link opens MyAnimeList, Jikan, or GitHub in a new tab
+- **WHEN** a link opens MyAnimeList, Tenrai, or GitHub in a new tab
 - **THEN** its accessible name or nearby text communicates that external behavior
 - **AND** the link uses safe new-tab attributes
 

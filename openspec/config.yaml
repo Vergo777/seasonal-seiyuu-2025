@@ -9,14 +9,18 @@ context: |
   - Backend: Spring Boot 3.5.5, Java 25, Gradle, JUnit 5, MockWebServer.
   - Frontend: React 19, TypeScript, Vite, React Router, Vitest, React Testing
     Library, and Playwright browser smoke tests.
-  - Data: Jikan API v4 (unofficial MyAnimeList API), cached to local JSON; no
+  - Data: Tenrai v1 public API (MyAnimeList-derived records), cached to local JSON; no
     database.
   - Deployment: frontend builds into backend/src/main/resources/static/ and is
     served by a Spring Boot monolithic JAR behind nginx and systemd on a VPS.
 
   Important constraints:
-  - Jikan requests must remain rate-limited at approximately one request per
-    second; refreshes can take 10-15 minutes and must remain resumable.
+  - Tenrai requests must remain rate-limited at approximately one request per
+    second; valid Retry-After guidance for 429 responses must be honored;
+    refreshes can take 10-15 minutes and must remain resumable.
+  - Keep upstream anime-data access behind provider-neutral types and
+    configuration; do not add Tenrai credentials unless an approved change
+    demonstrates they are needed.
   - The admin refresh endpoints use a single API key; never commit credentials
     or expose them in proposals, tests, logs, or documentation.
   - Preserve the existing /seiyuu context path and API contracts unless a
