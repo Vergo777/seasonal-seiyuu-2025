@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @Service
 public class SeasonDataService {
     private static final Logger log = LoggerFactory.getLogger(SeasonDataService.class);
+    private static final int MIN_DOMINANT_SEASON_PERCENT = 95;
 
     private final AnimeDataApiService animeDataApi;
     private final CacheService cacheService;
@@ -94,7 +95,7 @@ public class SeasonDataService {
                 throw new RefreshFailure("Season pagination was incomplete");
             }
 
-            List<Anime> seasonalAnime = deduplicate(animeResult.anime());
+            List<Anime> seasonalAnime = selectDominantSeason(deduplicate(animeResult.anime()));
             Anime first = seasonalAnime.get(0);
             candidateSeason = first.season();
             candidateYear = first.year();
@@ -241,11 +242,42 @@ public class SeasonDataService {
         }
     }
 
+    private List<Anime> selectDominantSeason(List<Anime> anime) {
+        if (anime.isEmpty()) throw new RefreshFailure("Season response has no anime");
+
+        Map<SeasonIdentity, List<Anime>> bySeason = new LinkedHashMap<>();
+        for (Anime item : anime) {
+            SeasonIdentity identity = new SeasonIdentity(
+                    item.season() == null ? "" : item.season().toLowerCase(Locale.ROOT), item.year());
+            bySeason.computeIfAbsent(identity, ignored -> new ArrayList<>()).add(item);
+        }
+
+        Map.Entry<SeasonIdentity, List<Anime>> dominant = bySeason.entrySet().stream()
+                .max(Comparator.comparingInt(entry -> entry.getValue().size()))
+                .orElseThrow(() -> new RefreshFailure("Season response has no anime"));
+        SeasonIdentity identity = dominant.getKey();
+        long dominantPercentNumerator = (long) dominant.getValue().size() * 100;
+        long requiredPercentNumerator = (long) anime.size() * MIN_DOMINANT_SEASON_PERCENT;
+        if (identity.season().isBlank() || identity.year() <= 0
+                || dominantPercentNumerator < requiredPercentNumerator) {
+            throw new RefreshFailure("Season response contains inconsistent season metadata");
+        }
+
+        int discarded = anime.size() - dominant.getValue().size();
+        if (discarded > 0) {
+            log.warn("Discarding {} anime outside dominant season {} {} from current-season response",
+                    discarded, identity.season(), identity.year());
+        }
+        return List.copyOf(dominant.getValue());
+    }
+
     private List<Anime> deduplicate(List<Anime> anime) {
         Map<Integer, Anime> unique = new LinkedHashMap<>();
         anime.forEach(item -> unique.putIfAbsent(item.malId(), item));
         return List.copyOf(unique.values());
     }
+
+    private record SeasonIdentity(String season, int year) { }
 
     private void removeRolesForAnime(Map<Integer, List<Role>> roles, int animeId) {
         roles.values().forEach(list -> list.removeIf(role -> role.anime().malId() == animeId));

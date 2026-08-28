@@ -16,12 +16,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -100,6 +102,39 @@ class SeasonDataServiceTest {
     }
 
     @Test
+    void smallMinorityOfMislabeledSeasonRecordsIsDiscarded() {
+        List<Anime> response = new ArrayList<>(IntStream.range(0, 19)
+                .mapToObj(index -> anime(1_000 + index, "summer", 2026))
+                .toList());
+        response.add(anime(999, "summer", 2023));
+        when(animeDataApi.getCurrentSeasonAnime()).thenReturn(new SeasonAnimeResult(response, response.size()));
+        when(animeDataApi.getAnimeCharacters(anyInt())).thenReturn(List.of());
+
+        service.refreshNow();
+
+        ArgumentCaptor<SeasonCache> candidate = ArgumentCaptor.forClass(SeasonCache.class);
+        verify(cacheService).saveCache(candidate.capture());
+        assertThat(candidate.getValue().season()).isEqualTo("summer");
+        assertThat(candidate.getValue().year()).isEqualTo(2026);
+        assertThat(service.getRefreshHealth().incompleteAnimeCount()).isEqualTo(19);
+        verify(animeDataApi, never()).getAnimeCharacters(999);
+    }
+
+    @Test
+    void materiallyMixedSeasonMetadataStillFailsClosed() {
+        List<Anime> response = List.of(
+                anime(1, "summer", 2026), anime(2, "summer", 2026),
+                anime(3, "spring", 2026), anime(4, "spring", 2026));
+        when(animeDataApi.getCurrentSeasonAnime()).thenReturn(new SeasonAnimeResult(response, response.size()));
+
+        service.refreshNow();
+
+        verify(cacheService, never()).saveCache(any());
+        verify(animeDataApi, never()).getAnimeCharacters(anyInt());
+        assertThat(service.getRefreshHealth().outcome()).isEqualTo("failed");
+    }
+
+    @Test
     void incompatibleProgressIsDiscardedBeforeFreshRun() {
         RefreshProgress progress = new RefreshProgress(RefreshProgress.CURRENT_FORMAT_VERSION,
                 "fall", 2025, Set.of(999), Set.of(), Map.of(), Map.of(), Map.of(), Set.of(),
@@ -135,5 +170,9 @@ class SeasonDataServiceTest {
 
     private CharacterVoiceActor cva(int vaId, String name, String characterName) {
         return new CharacterVoiceActor(new Character(300, characterName, "", "Main"), vaId, name, "");
+    }
+
+    private Anime anime(int malId, String season, int year) {
+        return new Anime(malId, "Anime " + malId, null, "image", "", season, year);
     }
 }

@@ -13,6 +13,7 @@
 - [x] 2.4 Keep the shared approximately one-request-per-second pacing gate and existing retry categories for 429, 5xx, timeout, and transport failures.
 - [x] 2.5 On HTTP 429, support integer-seconds and HTTP-date `Retry-After` values, honor normal delays inline, and defer excessive delays through a provider cooldown rather than sleeping indefinitely or retrying early; fall back to bounded exponential backoff with jitter when the header is absent/invalid.
 - [x] 2.6 Do not add Tenrai authentication/server-key handling unless current unauthenticated live validation demonstrates a concrete requirement.
+- [x] 2.7 After complete pagination, tolerate only a small minority of current-season records with stale season/year metadata by selecting a usable dominant season covering at least 95 percent; continue to fail closed for materially mixed metadata.
 
 ## 3. Contract and Reliability Tests
 
@@ -21,6 +22,7 @@
 - [x] 3.3 Verify deterministic tests cover current-season parsing/pagination/completeness, Japanese cast filtering, person roles, successful empty arrays, malformed payloads, incomplete pagination, non-retryable 4xx, 429/5xx retry, exhausted attempts, timeout/connection failure, and pacing.
 - [x] 3.4 Add deterministic tests for normal integer/date `Retry-After` handling, excessive-delay deferral and cooldown blocking/recovery, interruption, and invalid/missing-header fallback without making the test suite depend on real elapsed multi-second waits.
 - [x] 3.5 Keep normal backend tests fully offline and deterministic.
+- [x] 3.6 Verify deterministic refresh tests cover minority season outlier filtering and rejection of materially mixed season metadata.
 
 ## 4. Live Tenrai Compatibility Smoke
 

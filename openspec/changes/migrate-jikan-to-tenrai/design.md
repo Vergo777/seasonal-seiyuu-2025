@@ -48,6 +48,8 @@ Do not rename domain fields such as `malId`. Tenrai is supplying MyAnimeList-der
 
 Keep the current parsing behavior unless Tenrai live responses demonstrate a concrete incompatibility. The implementation should not pre-emptively rewrite working parsers merely because the provider changed.
 
+Production rollout exposed one such incompatibility: Tenrai's otherwise complete current-season response can contain a small number of entries whose own season/year metadata belongs to an older season. After proving raw pagination completeness, refresh orchestration selects the dominant usable season/year and may discard a small minority of outliers only when that dominant group covers at least 95 percent of the deduplicated response. Materially mixed or unusable metadata still fails closed, preserving the existing protection against publishing an ambiguous candidate.
+
 Existing fixtures remain useful as contract fixtures because Tenrai v1 targets Jikan compatibility. Rename fixture/test descriptions where they refer specifically to Jikan, but retain their payload shape unless live Tenrai validation proves a required field differs.
 
 Add a small live compatibility check, kept outside the normal deterministic unit-test path, that confirms the three required endpoint families return parseable data. It should use stable/known IDs for character and person-role checks and only assert contract-level facts, not volatile titles/counts.
