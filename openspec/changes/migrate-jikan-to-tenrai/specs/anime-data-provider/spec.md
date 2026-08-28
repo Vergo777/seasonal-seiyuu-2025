@@ -40,6 +40,17 @@ The system SHALL preserve its current-season behavior using Tenrai's Jikan-compa
 - **THEN** the client reports an explicit upstream-data failure
 - **AND** the candidate refresh is not treated as complete
 
+#### Scenario: Small minority of mislabeled season records
+- **WHEN** a complete current-season response has one usable season/year shared by at least 95 percent of deduplicated records
+- **AND** a small minority of records carry a different season/year
+- **THEN** refresh orchestration discards the minority outliers before fetching cast data
+- **AND** continues with the dominant season candidate
+
+#### Scenario: Materially mixed season metadata
+- **WHEN** no usable season/year covers at least 95 percent of deduplicated current-season records
+- **THEN** refresh orchestration reports an explicit upstream-data failure
+- **AND** the candidate refresh is not published
+
 ### Requirement: Cast Contract Compatibility
 The system SHALL preserve anime-character and Japanese voice-actor extraction using Tenrai's anime character endpoint.
 
