@@ -46,6 +46,6 @@
 - [x] 6.3 Run Playwright smoke/accessibility checks for the existing Browse, Detail, Compare, and About flows as applicable.
 - [x] 6.4 Run the opt-in live Tenrai compatibility smoke against the current public service and record any schema differences before deployment.
 - [x] 6.5 Run `openspec validate migrate-jikan-to-tenrai --strict` and resolve validation failures.
-- [x] 6.6 Inspect deployment/systemd environment for obsolete `JIKAN_*` overrides and replace them with the new provider-neutral settings if present.
+- [ ] 6.6 Inspect deployment/systemd environment for obsolete `JIKAN_*` overrides and replace them with the new provider-neutral settings if present.
 - [ ] 6.7 Deploy with automatic refresh controllable, trigger one authenticated manual refresh against Tenrai, and verify complete season pagination, cast data, career roles, candidate promotion, refresh health, and unchanged public API behavior.
 - [ ] 6.8 After the manual refresh succeeds, enable/rely on routine scheduling and retain the previous application artifact plus last known-good cache for rollback.
