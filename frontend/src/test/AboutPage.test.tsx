@@ -14,9 +14,11 @@ describe('AboutPage', () => {
     it('documents provenance and the current React stack', () => {
         render(<AboutPage />)
 
-        expect(screen.getByRole('link', { name: 'Jikan API (external)' })).toHaveAttribute('target', '_blank')
+        const tenraiLink = screen.getByRole('link', { name: 'Tenrai v1 API (external)' })
+        expect(tenraiLink).toHaveAttribute('href', 'https://tenrai.org/')
+        expect(tenraiLink).toHaveAttribute('target', '_blank')
         expect(screen.getByText(/React 19 · TypeScript · Vite/)).toBeInTheDocument()
-        expect(screen.getByText(/MyAnimeList API/)).toBeInTheDocument()
+        expect(screen.getByText(/MyAnimeList-derived/)).toBeInTheDocument()
     })
 
     it('keeps the collaboration note subordinate to product information', () => {

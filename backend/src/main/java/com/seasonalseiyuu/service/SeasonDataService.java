@@ -2,8 +2,8 @@ package com.seasonalseiyuu.service;
 
 import com.seasonalseiyuu.config.RefreshProperties;
 import com.seasonalseiyuu.model.*;
-import com.seasonalseiyuu.service.JikanApiService.CharacterVoiceActor;
-import com.seasonalseiyuu.service.JikanApiService.SeasonAnimeResult;
+import com.seasonalseiyuu.service.AnimeDataApiService.CharacterVoiceActor;
+import com.seasonalseiyuu.service.AnimeDataApiService.SeasonAnimeResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class SeasonDataService {
     private static final Logger log = LoggerFactory.getLogger(SeasonDataService.class);
 
-    private final JikanApiService jikanApi;
+    private final AnimeDataApiService animeDataApi;
     private final CacheService cacheService;
     private final RefreshProperties refreshProperties;
     private final AtomicBoolean refreshInProgress = new AtomicBoolean(false);
@@ -27,16 +27,16 @@ public class SeasonDataService {
     private final AtomicReference<RefreshHealth> currentHealth = new AtomicReference<>(RefreshHealth.empty());
 
     @Autowired
-    public SeasonDataService(JikanApiService jikanApi, CacheService cacheService,
+    public SeasonDataService(AnimeDataApiService animeDataApi, CacheService cacheService,
                              RefreshProperties refreshProperties) {
-        this.jikanApi = jikanApi;
+        this.animeDataApi = animeDataApi;
         this.cacheService = cacheService;
         this.refreshProperties = refreshProperties;
     }
 
     /** Compatibility constructor for focused unit tests. */
-    public SeasonDataService(JikanApiService jikanApi, CacheService cacheService) {
-        this(jikanApi, cacheService, new RefreshProperties());
+    public SeasonDataService(AnimeDataApiService animeDataApi, CacheService cacheService) {
+        this(animeDataApi, cacheService, new RefreshProperties());
     }
 
     public Optional<SeasonCache> getSeasonData() { return cacheService.loadCache(); }
@@ -89,7 +89,7 @@ public class SeasonDataService {
                 activeSeason, activeYear, null, null, currentHealth().incompleteAnimeCount()));
         updateStatus("Fetching seasonal anime...", 0, 0, null);
         try {
-            SeasonAnimeResult animeResult = jikanApi.getCurrentSeasonAnime();
+            SeasonAnimeResult animeResult = animeDataApi.getCurrentSeasonAnime();
             if (!animeResult.isComplete() || animeResult.anime().isEmpty()) {
                 throw new RefreshFailure("Season pagination was incomplete");
             }
@@ -121,7 +121,7 @@ public class SeasonDataService {
 
                 updateStatus("Fetching characters: " + safeTitle(anime.title()),
                         accumulator.fetchedAnimeIds.size(), seasonalAnime.size(), accumulator);
-                List<CharacterVoiceActor> characters = jikanApi.getAnimeCharacters(anime.malId());
+                List<CharacterVoiceActor> characters = animeDataApi.getAnimeCharacters(anime.malId());
                 removeRolesForAnime(accumulator.seasonalRoles, anime.malId());
                 if (characters.isEmpty()) {
                     accumulator.incompleteAnimeIds.add(anime.malId());
@@ -154,7 +154,7 @@ public class SeasonDataService {
                         && accumulator.partialVoiceActors.containsKey(vaId)) continue;
                 VoiceActorInput input = accumulator.voiceActorInputs.getOrDefault(vaId, new VoiceActorInput("Unknown", ""));
                 updateStatus("Fetching VA roles: " + safeTitle(input.name()), vaIndex, requiredVoiceActors.size(), accumulator);
-                List<Role> allTimeRoles = jikanApi.getPersonVoiceRoles(vaId);
+                List<Role> allTimeRoles = animeDataApi.getPersonVoiceRoles(vaId);
                 VoiceActor actor = VoiceActor.create(vaId, input.name(), input.imageUrl(),
                         List.copyOf(accumulator.seasonalRoles.getOrDefault(vaId, List.of())), allTimeRoles);
                 accumulator.partialVoiceActors.put(vaId, actor);

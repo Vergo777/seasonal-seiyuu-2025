@@ -3,17 +3,17 @@ import { render, screen } from '@testing-library/react'
 import Footer from '../components/Footer'
 
 describe('Footer', () => {
-    it('renders Jikan API credit', () => {
+    it('renders Tenrai API credit', () => {
         render(<Footer />)
 
-        expect(screen.getByText(/Jikan API/)).toBeInTheDocument()
+        expect(screen.getByText(/Tenrai v1 API/)).toBeInTheDocument()
     })
 
-    it('renders link to Jikan website', () => {
+    it('renders link to Tenrai API', () => {
         render(<Footer />)
 
-        const jikanLink = screen.getByRole('link', { name: /Jikan API/ })
-        expect(jikanLink).toHaveAttribute('href', 'https://jikan.moe/')
-        expect(jikanLink).toHaveAttribute('target', '_blank')
+        const tenraiLink = screen.getByRole('link', { name: /Tenrai v1 API/ })
+        expect(tenraiLink).toHaveAttribute('href', 'https://tenrai.org/')
+        expect(tenraiLink).toHaveAttribute('target', '_blank')
     })
 })
